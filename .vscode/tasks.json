@@ -2,6 +2,30 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "build-controller-msvc",
+      "type": "shell",
+      "windows": {
+        "command": "cl",
+        "args": [
+          "/Zi",
+          "/EHsc",
+          "/nologo",
+          "*.c",
+          "/link",
+          "i386\\ftd2xx.lib",
+          "/out:controller.exe"
+        ]
+
+      },
+      "problemMatcher": [
+        "$msCompile"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
       "label": "build-controller",
       "type": "shell",
       "osx": {

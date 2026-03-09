@@ -2,22 +2,27 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug on macOS and Windows",
-      "type": "cppdbg",
+      "name": "Debug controller.exe (Windows)",
+      "type": "cppvsdbg",
       "request": "launch",
-      "osx": {
-        "program": "${workspaceFolder}/controller",
-        "MIMode": "lldb",
-        "preLaunchTask": "build controller"
-      },
-      "windows": {
-        "program": "${workspaceFolder}\\controller.exe",
-        "miDebuggerPath": "C:\\mingw64\\bin\\gdb.exe"
-      },
+      "program": "${workspaceFolder}\\controller.exe",
       "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
-      "externalConsole": false
+      "console": "externalTerminal",
+      "preLaunchTask": "build-controller-msvc"
+    },
+    {
+      "name": "Debug controller (macOS)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/controller",
+      "MIMode": "lldb",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "externalConsole": false,
+      "preLaunchTask": "build-controller"
     }
   ]
 }
