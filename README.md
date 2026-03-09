@@ -85,3 +85,4 @@ Future updates to this project will include:
 - Implementation of the oscilloscope interface in software
 - Integration with FTDI hardware
 - Real-time signal acquisition and visualization
+
