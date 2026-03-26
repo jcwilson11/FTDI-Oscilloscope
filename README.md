@@ -86,3 +86,15 @@ Future updates to this project will include:
 - Integration with FTDI hardware
 - Real-time signal acquisition and visualization
 
+## Current Python Architecture Work
+
+The repository now includes a reusable Python package named `ioLibrary` for FTDI input/output responsibilities. This package separates hardware communication from the application layer so small demo programs and later oscilloscope features can reuse the same FTDI handling code.
+
+Current architecture additions:
+
+- `ioLibrary.ioBuffer` manages reusable byte buffers
+- `ioLibrary.ioRead` reads bytes from the FTDI device into an external buffer at a configured frequency
+- `ioLibrary.ioWrite` writes bytes from an external buffer at a configured frequency
+- `demo_led_blink.py` demonstrates LED blinking with `0xFF` and `0x00` at 1 Hz and 2 Hz
+- `oscilloscope/` contains scaffolding for the future MVC user interface and Pipe-and-Filter signal processing redesign
+

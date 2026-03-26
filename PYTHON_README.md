@@ -1,11 +1,13 @@
-# Python FT245R Controller
+# Python FTDI Library
 
-This repo now includes a Python entry point that talks to the FT245R through FTDI's D2XX driver.
+This repo now includes a reusable Python package named `ioLibrary` for FTDI reads and writes through the D2XX driver.
 
 ## Files
 
-- `controller.py`: command-line controller in Python
-- `ftd2xx_wrapper.py`: minimal `ctypes` wrapper over `ftd2xx.dll`
+- `ioLibrary/`: reusable FTDI IO package
+- `demo_led_blink.py`: sample application that uses only `ioLibrary`
+- `tests/test_iolibrary.py`: unit tests for the public library API
+- `controller.py`: earlier command-line prototype retained for reference
 
 ## Requirements
 
@@ -13,40 +15,37 @@ This repo now includes a Python entry point that talks to the FT245R through FTD
 - Python 3.10+
 - FTDI D2XX runtime installed so `ftd2xx.dll` is available on `PATH`, or a copy of `ftd2xx.dll` placed in this folder
 
-## Usage
+## Demo Usage
 
-Interactive menu:
-
-```powershell
-python controller.py
-```
-
-Write one byte:
+Run the LED blink demonstration:
 
 ```powershell
-python controller.py --write 0x01
+python demo_led_blink.py
 ```
 
-Read one byte:
+Pass the DLL explicitly if needed:
 
 ```powershell
-python controller.py --read
+python demo_led_blink.py --dll "C:\path\to\ftd2xx.dll"
 ```
 
-List devices visible to the FTDI D2XX driver:
+Change the number of cycles captured in the demo video:
 
 ```powershell
-python controller.py --list-devices
+python demo_led_blink.py --cycles 6
 ```
 
-Send Morse code:
+## Public API
 
-```powershell
-python controller.py --morse "SOS"
+```python
+from ioLibrary import ioBuffer, ioRead, ioWrite
+
+buffer = ioBuffer(2, initial_data=[0xFF, 0x00])
+writer = ioWrite()
+writer.setBuffer(buffer).setFrequency(1.0).setM(2)
+writer.executeWrite(cycles=4, sequence_mode=True)
 ```
 
-If the DLL is not on `PATH`, pass it explicitly:
+For the LED blink demo, `sequence_mode=True` writes one buffer element at a time and holds each state for part of the configured period. With `[0xFF, 0x00]`, this produces a visible ON/OFF blink at 1 Hz and 2 Hz instead of sending both bytes as one near-instant burst.
 
-```powershell
-python controller.py --dll "C:\path\to\ftd2xx.dll" --write 0x01
-```
+The application configures the frequency and buffer contents. All direct FTDI/D2XX interaction remains inside `ioLibrary`.
