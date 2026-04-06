@@ -166,7 +166,6 @@ class FtdiSession:
 
         payload = (c_ubyte * count)()
         read = c_uint32()
-        self._check(self._dll.FT_Purge(self._handle, FT_PURGE_RX), "FT_Purge")
         self._check(self._dll.FT_Read(self._handle, payload, count, byref(read)), "FT_Read")
         return bytes(payload[: read.value])
 

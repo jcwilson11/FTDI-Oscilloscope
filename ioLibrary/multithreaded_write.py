@@ -304,8 +304,8 @@ class UsbWriteController:
 
         if self.thread is not None:
             self.thread.join(timeout=2.0)
-
-        if self.stream.is_connected():
+        elif self.stream.is_connected():
+            # Defensive cleanup if start() opened the stream but no worker thread exists.
             self.stream.close()
 
     def join(self, timeout: Optional[float] = None) -> None:
@@ -318,6 +318,18 @@ class UsbWriteController:
 
     def _should_exit(self) -> bool:
         return not self.is_running() and self.buffer.is_empty()
+
+    def _write_fully(self, data: bytes) -> None:
+        offset = 0
+        while offset < len(data):
+            written = self.stream.write_bytes(data[offset:])
+            if written <= 0:
+                raise RuntimeError("Output stream made no forward progress during write.")
+            if written > len(data) - offset:
+                raise RuntimeError("Output stream reported writing more bytes than requested.")
+
+            offset += written
+            self.throughput_monitor.record_write(written)
 
     def write_loop(self) -> None:
         try:
@@ -337,8 +349,7 @@ class UsbWriteController:
                         break
                     continue
 
-                written = self.stream.write_bytes(data)
-                self.throughput_monitor.record_write(written)
+                self._write_fully(data)
                 self.scheduler.sleep_until_next_output(self.cfg.output_hz)
 
         except Exception as exc:
@@ -346,5 +357,7 @@ class UsbWriteController:
             self.recovery_manager.transition_to_safe_stop()
             self.buffer.close()
         finally:
+            if self.stream.is_connected():
+                self.stream.close()
             with self.lock:
                 self.running = False

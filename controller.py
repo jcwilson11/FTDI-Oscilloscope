@@ -199,6 +199,10 @@ def run_pipeline_command(args: argparse.Namespace) -> int:
     print("Write throughput KB/s:", round(snapshot["write_throughput_kbps"], 3))
     print("Buffer size:", snapshot["buffer_size"])
     print("Recovery safe stop:", snapshot["safe_stopped"])
+    if snapshot["recovery_messages"]:
+        print("Recovery messages:")
+        for message in snapshot["recovery_messages"]:
+            print("-", message)
 
     if snapshot["safe_stopped"] and return_code == 0:
         return 1

@@ -31,6 +31,48 @@ class FailingOutputStream:
         return self.connected
 
 
+class RecordingOutputStream:
+    def __init__(self):
+        self.connected = False
+        self.close_calls = 0
+        self.written = bytearray()
+
+    def open(self) -> None:
+        self.connected = True
+
+    def close(self) -> None:
+        self.connected = False
+        self.close_calls += 1
+
+    def write_bytes(self, data: bytes) -> int:
+        self.written.extend(data)
+        return len(data)
+
+    def is_connected(self) -> bool:
+        return self.connected
+
+
+class PartialOutputStream:
+    def __init__(self, max_chunk_size: int):
+        self.max_chunk_size = max_chunk_size
+        self.connected = False
+        self.written = bytearray()
+
+    def open(self) -> None:
+        self.connected = True
+
+    def close(self) -> None:
+        self.connected = False
+
+    def write_bytes(self, data: bytes) -> int:
+        chunk = data[: self.max_chunk_size]
+        self.written.extend(chunk)
+        return len(chunk)
+
+    def is_connected(self) -> bool:
+        return self.connected
+
+
 class TestDataBuffer(unittest.TestCase):
     def test_push_then_pop_preserves_order_with_wraparound(self):
         buffer = DataBuffer(capacity=5)
@@ -97,6 +139,33 @@ class TestDataBuffer(unittest.TestCase):
 
         with self.assertRaises(RuntimeError):
             buffer.push(b"A")
+
+    def test_close_wakes_blocked_producer(self):
+        buffer = DataBuffer(capacity=2)
+        finished = threading.Event()
+        errors = []
+
+        buffer.push(b"AB")
+
+        def producer():
+            try:
+                buffer.push(b"C")
+            except RuntimeError as exc:
+                errors.append(str(exc))
+            finally:
+                finished.set()
+
+        thread = threading.Thread(target=producer)
+        thread.start()
+
+        time.sleep(0.1)
+        self.assertFalse(finished.is_set())
+
+        buffer.close()
+        thread.join(timeout=1.0)
+
+        self.assertTrue(finished.is_set())
+        self.assertTrue(any("closed buffer" in message for message in errors))
 
 
 class TestMultithreadedWrite(unittest.TestCase):
@@ -184,6 +253,34 @@ class TestMultithreadedWrite(unittest.TestCase):
 
         self.assertFalse(writer.is_running())
 
+    def test_writer_closes_stream_when_worker_loop_exits(self):
+        cfg = TransferConfig(output_hz=1000.0, bytes_per_write=4)
+        buffer = DataBuffer(capacity=32)
+        throughput_monitor = ThroughputMonitor()
+        recovery_manager = RecoveryManager()
+        scheduler = OutputScheduler()
+        stream = RecordingOutputStream()
+
+        writer = UsbWriteController(
+            stream=stream,
+            cfg=cfg,
+            buffer=buffer,
+            throughput_monitor=throughput_monitor,
+            recovery_manager=recovery_manager,
+            scheduler=scheduler,
+        )
+
+        buffer.push(b"DATA")
+        writer.start()
+        time.sleep(0.05)
+        buffer.close()
+        writer.join(timeout=1.0)
+
+        self.assertEqual(bytes(stream.written), b"DATA")
+        self.assertEqual(stream.close_calls, 1)
+        self.assertFalse(stream.is_connected())
+        self.assertFalse(writer.is_running())
+
     def test_writer_enters_safe_stop_on_failure(self):
         cfg = TransferConfig(output_hz=10.0, bytes_per_write=4)
         buffer = DataBuffer(capacity=32)
@@ -208,6 +305,32 @@ class TestMultithreadedWrite(unittest.TestCase):
         self.assertTrue(recovery_manager.safe_stopped)
         self.assertTrue(any("Write failure" in msg for msg in recovery_manager.messages))
         self.assertTrue(buffer.is_closed())
+
+    def test_writer_retries_until_partial_write_chunk_is_fully_flushed(self):
+        cfg = TransferConfig(output_hz=1000.0, bytes_per_write=6)
+        buffer = DataBuffer(capacity=32)
+        throughput_monitor = ThroughputMonitor()
+        recovery_manager = RecoveryManager()
+        scheduler = OutputScheduler()
+        stream = PartialOutputStream(max_chunk_size=2)
+
+        writer = UsbWriteController(
+            stream=stream,
+            cfg=cfg,
+            buffer=buffer,
+            throughput_monitor=throughput_monitor,
+            recovery_manager=recovery_manager,
+            scheduler=scheduler,
+        )
+
+        buffer.push(b"ABCDEF")
+        writer.start()
+        time.sleep(0.05)
+        writer.stop()
+
+        self.assertEqual(bytes(stream.written), b"ABCDEF")
+        self.assertEqual(throughput_monitor.total_written, 6)
+        self.assertFalse(recovery_manager.safe_stopped)
 
 
 if __name__ == "__main__":
