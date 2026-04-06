@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import threading
 import time
 from dataclasses import dataclass
-from collections import deque
-from typing import Optional
+from typing import Callable, Optional, Protocol
+
+from ._ftdi_session import FtdiSession
 
 
 @dataclass
@@ -65,61 +68,125 @@ class OutputScheduler:
         self.next_time += period
 
 
+class WritableByteStream(Protocol):
+    def open(self) -> None:
+        ...
+
+    def close(self) -> None:
+        ...
+
+    def write_bytes(self, data: bytes) -> int:
+        ...
+
+    def is_connected(self) -> bool:
+        ...
+
+
 class DataBuffer:
     def __init__(self, capacity: int = 1024):
+        if capacity <= 0:
+            raise ValueError("capacity must be greater than zero")
+
         self.capacity = capacity
-        self.buffer = deque()
-        self.size_count = 0
-        self.closed = False
-        self.condition = threading.Condition()
+        self._storage = bytearray(capacity)
+        self._head = 0
+        self._tail = 0
+        self._count = 0
+        self._closed = False
+        self._lock = threading.Lock()
+        self._not_empty = threading.Condition(self._lock)
+        self._not_full = threading.Condition(self._lock)
 
     def push(self, data: bytes) -> None:
         if not data:
             return
 
-        with self.condition:
-            for b in data:
-                while self.size_count >= self.capacity and not self.closed:
-                    self.condition.wait()
+        payload = memoryview(bytes(data))
+        offset = 0
+        with self._lock:
+            while offset < len(payload):
+                while self._count >= self.capacity and not self._closed:
+                    self._not_full.wait()
 
-                if self.closed:
+                if self._closed:
                     raise RuntimeError("Cannot push to closed buffer.")
 
-                self.buffer.append(b)
-                self.size_count += 1
+                writable = min(self.capacity - self._count, len(payload) - offset)
+                first = min(writable, self.capacity - self._tail)
+                self._storage[self._tail : self._tail + first] = payload[offset : offset + first]
+                self._tail = (self._tail + first) % self.capacity
+                offset += first
+                self._count += first
 
-            self.condition.notify_all()
+                second = writable - first
+                if second:
+                    self._storage[self._tail : self._tail + second] = payload[offset : offset + second]
+                    self._tail = (self._tail + second) % self.capacity
+                    offset += second
+                    self._count += second
+
+                self._not_empty.notify_all()
 
     def pop(self, n: int, timeout: Optional[float] = None) -> bytes:
-        with self.condition:
+        if n <= 0:
+            return b""
+
+        with self._lock:
             if timeout is None:
-                while self.size_count == 0 and not self.closed:
-                    self.condition.wait()
+                while self._count == 0 and not self._closed:
+                    self._not_empty.wait()
             else:
                 end_time = time.perf_counter() + timeout
-                while self.size_count == 0 and not self.closed:
+                while self._count == 0 and not self._closed:
                     remaining = end_time - time.perf_counter()
                     if remaining <= 0:
                         return b""
-                    self.condition.wait(timeout=remaining)
+                    self._not_empty.wait(timeout=remaining)
 
-            if self.size_count == 0 and self.closed:
+            if self._count == 0 and self._closed:
                 return b""
 
-            count = min(n, self.size_count)
-            out = bytearray()
+            readable = min(n, self._count)
+            out = bytearray(readable)
+            first = min(readable, self.capacity - self._head)
+            out[:first] = self._storage[self._head : self._head + first]
+            self._head = (self._head + first) % self.capacity
+            self._count -= first
 
-            for _ in range(count):
-                out.append(self.buffer.popleft())
-                self.size_count -= 1
+            second = readable - first
+            if second:
+                out[first:] = self._storage[self._head : self._head + second]
+                self._head = (self._head + second) % self.capacity
+                self._count -= second
 
-            self.condition.notify_all()
+            self._not_full.notify_all()
             return bytes(out)
 
     def close(self) -> None:
-        with self.condition:
-            self.closed = True
-            self.condition.notify_all()
+        with self._lock:
+            self._closed = True
+            self._not_empty.notify_all()
+            self._not_full.notify_all()
+
+    def is_closed(self) -> bool:
+        with self._lock:
+            return self._closed
+
+    def is_empty(self) -> bool:
+        with self._lock:
+            return self._count == 0
+
+    def is_full(self) -> bool:
+        with self._lock:
+            return self._count == self.capacity
+
+    def size(self) -> int:
+        with self._lock:
+            return self._count
+
+    def available_space(self) -> int:
+        with self._lock:
+            return self.capacity - self._count
 
 
 class FileByteStream:
@@ -149,10 +216,60 @@ class FileByteStream:
         return self.connected
 
 
+class FtdiOutputByteStream:
+    def __init__(
+        self,
+        *,
+        device_index: int = 0,
+        dll_path: str | None = None,
+        session_factory: Optional[Callable[[], object]] = None,
+    ):
+        self.device_index = device_index
+        self.dll_path = dll_path
+        self.session_factory = session_factory or (
+            lambda: FtdiSession(dll_path=self.dll_path, device_index=self.device_index)
+        )
+        self.session = None
+        self.connected = False
+
+    def open(self) -> None:
+        session = self.session_factory()
+        if hasattr(session, "__enter__"):
+            session = session.__enter__()
+        else:
+            session.open()
+            if hasattr(session, "initialize_bitbang"):
+                session.initialize_bitbang()
+        self.session = session
+        self.connected = True
+
+    def close(self) -> None:
+        if self.session is None:
+            self.connected = False
+            return
+
+        try:
+            if hasattr(self.session, "__exit__"):
+                self.session.__exit__(None, None, None)
+            else:
+                self.session.close()
+        finally:
+            self.session = None
+            self.connected = False
+
+    def write_bytes(self, data: bytes) -> int:
+        if not self.connected or self.session is None:
+            raise RuntimeError("Output stream is not open.")
+        return self.session.write_bytes(data)
+
+    def is_connected(self) -> bool:
+        return self.connected
+
+
 class UsbWriteController:
     def __init__(
         self,
-        stream: FileByteStream,
+        stream: WritableByteStream,
         cfg: TransferConfig,
         buffer: DataBuffer,
         throughput_monitor: ThroughputMonitor,
@@ -185,29 +302,39 @@ class UsbWriteController:
         with self.lock:
             self.running = False
 
-        self.buffer.close()
-
         if self.thread is not None:
             self.thread.join(timeout=2.0)
 
         if self.stream.is_connected():
             self.stream.close()
 
+    def join(self, timeout: Optional[float] = None) -> None:
+        if self.thread is not None:
+            self.thread.join(timeout=timeout)
+
     def is_running(self) -> bool:
         with self.lock:
             return self.running
 
+    def _should_exit(self) -> bool:
+        return not self.is_running() and self.buffer.is_empty()
+
     def write_loop(self) -> None:
         try:
-            while self.is_running():
+            while True:
+                if self._should_exit():
+                    break
+
                 if not self.stream.is_connected():
                     self.recovery_manager.notify_user("Output connection lost.")
                     self.recovery_manager.transition_to_safe_stop()
+                    self.buffer.close()
                     break
 
                 data = self.buffer.pop(self.cfg.bytes_per_write, timeout=0.5)
-
                 if not data:
+                    if self._should_exit() or (self.buffer.is_closed() and self.buffer.is_empty()):
+                        break
                     continue
 
                 written = self.stream.write_bytes(data)
@@ -217,6 +344,7 @@ class UsbWriteController:
         except Exception as exc:
             self.recovery_manager.notify_user(f"Write failure: {exc}")
             self.recovery_manager.transition_to_safe_stop()
+            self.buffer.close()
         finally:
             with self.lock:
                 self.running = False

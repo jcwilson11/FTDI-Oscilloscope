@@ -56,14 +56,13 @@ class TestMultithreadedRead(unittest.TestCase):
         time.sleep(0.2)
         reader.stop()
 
-        data = buffer.pop(8)
-        self.assertEqual(data, b"ABCDEFGH")
+        self.assertEqual(buffer.pop(8), b"ABCDEFGH")
         self.assertGreaterEqual(acquisition_monitor.total_read, 8)
         self.assertFalse(recovery_manager.safe_stopped)
         self.assertTrue(session.entered)
         self.assertTrue(session.closed)
 
-    def test_reader_stops_cleanly(self):
+    def test_reader_stop_leaves_buffer_open_for_pipeline_controller(self):
         cfg = AcquisitionConfig(input_hz=10.0, bytes_per_read=2)
         buffer = DataBuffer(capacity=32)
         acquisition_monitor = AcquisitionMonitor()
@@ -85,7 +84,7 @@ class TestMultithreadedRead(unittest.TestCase):
         reader.stop()
 
         self.assertFalse(reader.is_running())
-        self.assertTrue(buffer.closed)
+        self.assertFalse(buffer.is_closed())
 
     def test_reader_enters_safe_stop_on_failure(self):
         cfg = AcquisitionConfig(input_hz=10.0, bytes_per_read=2)
@@ -111,6 +110,7 @@ class TestMultithreadedRead(unittest.TestCase):
 
         self.assertTrue(recovery_manager.safe_stopped)
         self.assertFalse(reader.is_running())
+        self.assertTrue(buffer.is_closed())
         self.assertTrue(any("Read failure" in msg for msg in recovery_manager.messages))
 
 

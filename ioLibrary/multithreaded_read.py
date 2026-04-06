@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import threading
 import time
 from dataclasses import dataclass
@@ -142,7 +144,10 @@ class UsbReadController:
             self.thread.join(timeout=2.0)
 
         self.stream.close()
-        self.buffer.close()
+
+    def join(self, timeout: Optional[float] = None) -> None:
+        if self.thread is not None:
+            self.thread.join(timeout=timeout)
 
     def is_running(self) -> bool:
         with self.lock:
@@ -154,6 +159,7 @@ class UsbReadController:
                 if not self.stream.is_connected():
                     self.recovery_manager.notify_user("Input connection lost.")
                     self.recovery_manager.transition_to_safe_stop()
+                    self.buffer.close()
                     break
 
                 data = self.stream.read_bytes(self.cfg.bytes_per_read)
@@ -166,8 +172,8 @@ class UsbReadController:
         except Exception as exc:
             self.recovery_manager.notify_user(f"Read failure: {exc}")
             self.recovery_manager.transition_to_safe_stop()
-        finally:
             self.buffer.close()
+        finally:
             self.stream.close()
             with self.lock:
                 self.running = False
