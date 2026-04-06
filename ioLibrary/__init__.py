@@ -1,6 +1,7 @@
 """Public API for the reusable FTDI IO library."""
 
 from .buffer import ioBuffer
+from .data_buffer import DataBuffer
 from .errors import FtdiError, IoLibraryError
 from .multithreaded_read import (
     AcquisitionConfig,
@@ -10,7 +11,6 @@ from .multithreaded_read import (
     UsbReadController,
 )
 from .multithreaded_write import (
-    DataBuffer,
     FileByteStream,
     FtdiOutputByteStream,
     OutputScheduler,

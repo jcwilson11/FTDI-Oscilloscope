@@ -3,8 +3,8 @@ import time
 import unittest
 from pathlib import Path
 
+from ioLibrary.data_buffer import DataBuffer
 from ioLibrary.multithreaded_write import (
-    DataBuffer,
     FileByteStream,
     OutputScheduler,
     RecoveryManager,

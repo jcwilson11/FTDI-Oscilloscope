@@ -1,6 +1,7 @@
 import time
 import unittest
 
+from ioLibrary.data_buffer import DataBuffer
 from ioLibrary.multithreaded_read import (
     AcquisitionConfig,
     AcquisitionMonitor,
@@ -8,7 +9,7 @@ from ioLibrary.multithreaded_read import (
     InputScheduler,
     UsbReadController,
 )
-from ioLibrary.multithreaded_write import DataBuffer, RecoveryManager
+from ioLibrary.multithreaded_write import RecoveryManager
 
 
 class FakeReadSession:

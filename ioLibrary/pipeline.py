@@ -4,6 +4,7 @@ import threading
 from dataclasses import dataclass
 from typing import Optional
 
+from .data_buffer import DataBuffer
 from .multithreaded_read import (
     AcquisitionConfig,
     AcquisitionMonitor,
@@ -12,7 +13,6 @@ from .multithreaded_read import (
     UsbReadController,
 )
 from .multithreaded_write import (
-    DataBuffer,
     FileByteStream,
     FtdiOutputByteStream,
     OutputScheduler,

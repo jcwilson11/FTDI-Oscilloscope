@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from typing import Callable, Optional
 
 from ._ftdi_session import FtdiSession
-from .multithreaded_write import DataBuffer, RecoveryManager
+from .data_buffer import DataBuffer
+from .multithreaded_write import RecoveryManager
 
 
 @dataclass
