@@ -11,4 +11,7 @@ __all__ = [
     "ioBuffer",
     "ioRead",
     "ioWrite",
+    "AcquisitionConfig",
+    "UsbReadController",
+    "FtdiByteStream",
 ]
