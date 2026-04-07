@@ -2,7 +2,7 @@ import time
 import unittest
 from pathlib import Path
 
-from ioLibrary.multithreaded_read import FtdiByteStream
+from ioLibrary.multithreaded_read import FileInputByteStream, FtdiByteStream
 from ioLibrary.multithreaded_write import FileByteStream, FtdiOutputByteStream
 from ioLibrary.pipeline import PipelineConfig, PipelineController
 
@@ -48,13 +48,47 @@ class FakeWriteSession:
 
 class PipelineControllerTests(unittest.TestCase):
     def setUp(self):
+        self.input_file = Path("pipeline_input.bin")
         self.output_file = Path("pipeline_output.bin")
+        if self.input_file.exists():
+            self.input_file.unlink()
         if self.output_file.exists():
             self.output_file.unlink()
 
     def tearDown(self):
+        if self.input_file.exists():
+            self.input_file.unlink()
         if self.output_file.exists():
             self.output_file.unlink()
+
+    def test_pipeline_moves_data_from_file_to_file(self):
+        self.input_file.write_bytes(b"RoundTripData123")
+        input_stream = FileInputByteStream(str(self.input_file))
+        output_stream = FileByteStream(str(self.output_file), append=False)
+        cfg = PipelineConfig(
+            input_mode="file",
+            input_path=str(self.input_file),
+            output_mode="file",
+            output_path=str(self.output_file),
+            append_output=False,
+            bytes_per_read=4,
+            bytes_per_write=4,
+            input_hz=100.0,
+            output_hz=100.0,
+            buffer_capacity=32,
+        )
+
+        pipeline = PipelineController(cfg, input_stream=input_stream, output_stream=output_stream)
+        pipeline.start()
+
+        deadline = time.perf_counter() + 1.0
+        while pipeline.is_running() and time.perf_counter() < deadline:
+            time.sleep(0.01)
+        pipeline.stop()
+
+        self.assertFalse(pipeline.is_running())
+        self.assertEqual(self.output_file.read_bytes(), self.input_file.read_bytes())
+        self.assertEqual(pipeline.status_snapshot()["bytes_read"], len(self.input_file.read_bytes()))
 
     def test_pipeline_moves_data_from_fake_ftdi_to_file(self):
         read_session = FakeReadSession(payloads=[b"ABCD", b"EFGH", b"IJKL"])

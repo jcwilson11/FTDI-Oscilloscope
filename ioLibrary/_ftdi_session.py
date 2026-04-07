@@ -35,7 +35,7 @@ FT_STATUS_NAMES = {
 }
 
 
-class FtdiSession:
+class ioFtdiSession:
     """Internal D2XX adapter used by ioRead and ioWrite."""
 
     def __init__(self, dll_path: str | None = None, device_index: int = 0):
@@ -223,3 +223,6 @@ class FtdiSession:
 
     def __exit__(self, exc_type, exc, tb):
         self.close()
+
+
+FtdiSession = ioFtdiSession

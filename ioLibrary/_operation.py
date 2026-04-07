@@ -4,12 +4,12 @@ import threading
 from abc import ABC, abstractmethod
 from typing import Callable
 
-from ._ftdi_session import FtdiSession
+from ._ftdi_session import ioFtdiSession
 from .buffer import ioBuffer
-from .errors import IoLibraryError
+from .errors import ioLibraryError
 
 
-class _BaseIoOperation(ABC):
+class ioBaseIoOperation(ABC):
     def __init__(
         self,
         buffer: ioBuffer | None = None,
@@ -24,7 +24,7 @@ class _BaseIoOperation(ABC):
         self.device_index = device_index
         self.dll_path = dll_path
         self._session_factory = session_factory or (
-            lambda: FtdiSession(dll_path=self.dll_path, device_index=self.device_index)
+            lambda: ioFtdiSession(dll_path=self.dll_path, device_index=self.device_index)
         )
         self._stop_event = threading.Event()
 
@@ -35,24 +35,24 @@ class _BaseIoOperation(ABC):
 
     def setBuffer(self, buffer: ioBuffer):
         if not isinstance(buffer, ioBuffer):
-            raise IoLibraryError("buffer must be an ioBuffer instance")
+            raise ioLibraryError("buffer must be an ioBuffer instance")
         self.buffer = buffer
         return self
 
     def setFrequency(self, frequency_hz: float):
         if frequency_hz <= 0:
-            raise IoLibraryError("frequency_hz must be greater than zero")
+            raise ioLibraryError("frequency_hz must be greater than zero")
         self.frequency_hz = float(frequency_hz)
         return self
 
     def _require_buffer(self) -> ioBuffer:
         if self.buffer is None:
-            raise IoLibraryError("buffer must be configured before execution")
+            raise ioLibraryError("buffer must be configured before execution")
         return self.buffer
 
     def _require_frequency(self) -> float:
         if self.frequency_hz is None:
-            raise IoLibraryError("frequency_hz must be configured before execution")
+            raise ioLibraryError("frequency_hz must be configured before execution")
         return self.frequency_hz
 
     @property
@@ -67,7 +67,7 @@ class _BaseIoOperation(ABC):
 
     def run(self, cycles: int | None = None) -> int:
         if cycles is not None and cycles < 0:
-            raise IoLibraryError("cycles must be non-negative")
+            raise ioLibraryError("cycles must be non-negative")
 
         self._validate_configuration()
         self._stop_event.clear()
@@ -89,3 +89,6 @@ class _BaseIoOperation(ABC):
     @abstractmethod
     def _validate_configuration(self):
         raise NotImplementedError
+
+
+_BaseIoOperation = ioBaseIoOperation

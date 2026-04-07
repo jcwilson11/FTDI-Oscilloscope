@@ -5,7 +5,7 @@ import time
 from typing import Optional
 
 
-class DataBuffer:
+class ioDataBuffer:
     """Thread-safe bounded circular buffer shared by the read and write workers."""
 
     def __init__(self, capacity: int = 1024):
@@ -112,3 +112,6 @@ class DataBuffer:
     def available_space(self) -> int:
         with self._lock:
             return self.capacity - self._count
+
+
+DataBuffer = ioDataBuffer

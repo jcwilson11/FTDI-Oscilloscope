@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from ._operation import _BaseIoOperation
+from ._operation import ioBaseIoOperation
 from .buffer import ioBuffer
-from .errors import IoLibraryError
+from .errors import ioLibraryError
 
 
-class ioWrite(_BaseIoOperation):
+class ioWrite(ioBaseIoOperation):
     """Write M bytes from an external ioBuffer at a fixed frequency."""
 
     def __init__(
@@ -31,16 +31,16 @@ class ioWrite(_BaseIoOperation):
 
     def setM(self, length: int):
         if length <= 0:
-            raise IoLibraryError("length must be greater than zero")
+            raise ioLibraryError("length must be greater than zero")
         self.mBytes = int(length)
         if self.buffer is not None and self.mBytes > self.buffer.size:
-            raise IoLibraryError("length cannot exceed buffer size")
+            raise ioLibraryError("length cannot exceed buffer size")
         return self
 
     def setBuffer(self, buffer: ioBuffer):
         super().setBuffer(buffer)
         if self.mBytes is not None and self.mBytes > buffer.size:
-            raise IoLibraryError("length cannot exceed buffer size")
+            raise ioLibraryError("length cannot exceed buffer size")
         return self
 
     @property
@@ -69,7 +69,7 @@ class ioWrite(_BaseIoOperation):
 
     def run_sequence(self, cycles: int) -> int:
         if cycles < 0:
-            raise IoLibraryError("cycles must be non-negative")
+            raise ioLibraryError("cycles must be non-negative")
 
         self._validate_configuration()
         self._stop_event.clear()
@@ -100,6 +100,6 @@ class ioWrite(_BaseIoOperation):
         buffer = self._require_buffer()
         self._require_frequency()
         if self.mBytes is None:
-            raise IoLibraryError("length must be configured before execution")
+            raise ioLibraryError("length must be configured before execution")
         if self.mBytes > buffer.size:
-            raise IoLibraryError("length cannot exceed buffer size")
+            raise ioLibraryError("length cannot exceed buffer size")

@@ -1,6 +1,7 @@
 import argparse
 import sys
 import time
+from pathlib import Path
 
 from ftd2xx_wrapper import FtdiDevice, FtdiError
 from ioLibrary import PipelineConfig, PipelineController
@@ -151,10 +152,13 @@ def build_pipeline_config(args: argparse.Namespace) -> PipelineConfig:
         raise ValueError("--duration-seconds must be greater than zero")
 
     return PipelineConfig(
+        input_mode=args.input_mode,
         input_device_index=args.input_device_index,
+        input_path=args.input_path,
         output_mode=args.output_mode,
         output_path=args.output_path,
         output_device_index=args.output_device_index,
+        append_output=not args.overwrite_output,
         bytes_per_read=args.bytes_per_read,
         bytes_per_write=args.bytes_per_write,
         input_hz=args.input_hz,
@@ -172,11 +176,21 @@ def run_pipeline_command(args: argparse.Namespace) -> int:
         pipeline.start()
 
         deadline = time.perf_counter() + args.duration_seconds
+        next_status_time = time.perf_counter()
         while time.perf_counter() < deadline:
             remaining = deadline - time.perf_counter()
             time.sleep(min(0.1, max(remaining, 0.0)))
             snapshot = pipeline.status_snapshot()
-            if snapshot["safe_stopped"] and not pipeline.is_running():
+            now = time.perf_counter()
+            if now >= next_status_time:
+                print(
+                    "Running...",
+                    f"buffer={snapshot['buffer_size']}/{snapshot['buffer_capacity']}",
+                    f"read={snapshot['bytes_read']}",
+                    f"written={snapshot['bytes_written']}",
+                )
+                next_status_time = now + 0.5
+            if not pipeline.is_running() and (snapshot["safe_stopped"] or snapshot["buffer_closed"]):
                 break
 
         return_code = 0
@@ -209,6 +223,62 @@ def run_pipeline_command(args: argparse.Namespace) -> int:
     return return_code
 
 
+def compare_files(left_path: str, right_path: str, chunk_size: int = 4096) -> tuple[bool, str]:
+    left = Path(left_path)
+    right = Path(right_path)
+
+    if not left.exists():
+        raise FileNotFoundError(f"Left file not found: {left}")
+    if not right.exists():
+        raise FileNotFoundError(f"Right file not found: {right}")
+    if not left.is_file():
+        raise ValueError(f"Left path is not a file: {left}")
+    if not right.is_file():
+        raise ValueError(f"Right path is not a file: {right}")
+    if chunk_size <= 0:
+        raise ValueError("chunk_size must be greater than zero")
+
+    offset = 0
+    with left.open("rb") as left_handle, right.open("rb") as right_handle:
+        while True:
+            left_chunk = left_handle.read(chunk_size)
+            right_chunk = right_handle.read(chunk_size)
+
+            if left_chunk == right_chunk:
+                if not left_chunk:
+                    size = left.stat().st_size
+                    return True, f"Files match exactly ({size} bytes)."
+                offset += len(left_chunk)
+                continue
+
+            limit = min(len(left_chunk), len(right_chunk))
+            for index in range(limit):
+                if left_chunk[index] != right_chunk[index]:
+                    absolute_offset = offset + index
+                    return (
+                        False,
+                        "Files differ at byte offset "
+                        f"{absolute_offset}: left=0x{left_chunk[index]:02X}, right=0x{right_chunk[index]:02X}.",
+                    )
+
+            return (
+                False,
+                "Files have different lengths starting at byte offset "
+                f"{offset + limit}: left_size={left.stat().st_size}, right_size={right.stat().st_size}.",
+            )
+
+
+def run_compare_files_command(args: argparse.Namespace) -> int:
+    try:
+        matches, message = compare_files(args.left_file, args.right_file)
+    except (FileNotFoundError, ValueError) as exc:
+        print(f"Compare error: {exc}", file=sys.stderr)
+        return 1
+
+    print(message)
+    return 0 if matches else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Python FT245R controller")
     parser.add_argument("--dll", help="Optional path to ftd2xx.dll")
@@ -224,6 +294,13 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pipeline_parser.add_argument("--input-device-index", type=int, default=0, help="FTDI source device index")
     pipeline_parser.add_argument(
+        "--input-mode",
+        choices=["file", "ftdi"],
+        default="ftdi",
+        help="Pipeline input source type",
+    )
+    pipeline_parser.add_argument("--input-path", help="Input file path for file mode")
+    pipeline_parser.add_argument(
         "--output-mode",
         choices=["file", "ftdi"],
         required=True,
@@ -231,6 +308,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     pipeline_parser.add_argument("--output-path", help="Output file path for file mode")
     pipeline_parser.add_argument("--output-device-index", type=int, help="FTDI destination device index for ftdi mode")
+    pipeline_parser.add_argument(
+        "--overwrite-output",
+        action="store_true",
+        help="Overwrite the output file instead of appending to it",
+    )
     pipeline_parser.add_argument("--bytes-per-read", type=int, default=8, help="Read chunk size")
     pipeline_parser.add_argument("--bytes-per-write", type=int, default=8, help="Write chunk size")
     pipeline_parser.add_argument("--input-hz", type=float, default=10.0, help="Read loop frequency in Hz")
@@ -242,6 +324,13 @@ def build_parser() -> argparse.ArgumentParser:
         default=2.0,
         help="How long to run the pipeline before clean shutdown",
     )
+
+    compare_parser = subparsers.add_parser(
+        "compare-files",
+        help="Compare two files byte-for-byte",
+    )
+    compare_parser.add_argument("left_file", help="First file to compare")
+    compare_parser.add_argument("right_file", help="Second file to compare")
 
     return parser
 
@@ -290,6 +379,8 @@ def main() -> int:
     try:
         if args.command == "pipeline":
             return run_pipeline_command(args)
+        if args.command == "compare-files":
+            return run_compare_files_command(args)
         return run_legacy_command(args)
     except FtdiError as exc:
         print(f"FTDI error: {exc}", file=sys.stderr)

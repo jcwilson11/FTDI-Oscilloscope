@@ -1,6 +1,2 @@
-class IoLibraryError(RuntimeError):
-    """Base error for ioLibrary."""
-
-
-class FtdiError(IoLibraryError):
-    """Raised when the FTDI D2XX layer reports an error."""
+from .io_ftdi_error import FtdiError, ioFtdiError
+from .io_library_error import IoLibraryError, ioLibraryError

@@ -104,6 +104,8 @@ Current architecture additions:
 
 The repository now includes a multithreaded FTDI data acquisition pipeline. The pipeline reads bytes from an FTDI source device, stores them in a thread-safe circular buffer, and writes them either to a file or to another FTDI device.
 
+The pipeline can also be run in a deterministic file-to-file demo mode, which reads bytes from an input file, pushes them through the same shared buffer, and writes them back out to an output file.
+
 ### Requirements
 
 Before running the pipeline, make sure the following are true:
@@ -144,6 +146,18 @@ Run the pipeline from an FTDI device to a file:
 python controller.py pipeline --output-mode file --output-path demo_output.bin --input-device-index 0 --bytes-per-read 8 --bytes-per-write 8 --input-hz 20 --output-hz 20 --buffer-capacity 256 --duration-seconds 5
 ```
 
+Run the pipeline from a file to a file for a repeatable round-trip test:
+
+```powershell
+python controller.py pipeline --input-mode file --input-path demo_input.bin --output-mode file --output-path demo_output.bin --overwrite-output --bytes-per-read 8 --bytes-per-write 8 --input-hz 20 --output-hz 20 --buffer-capacity 256 --duration-seconds 5
+```
+
+Then compare the result against the original input:
+
+```powershell
+python controller.py compare-files demo_input.bin demo_output.bin
+```
+
 Run the pipeline from one FTDI device to another FTDI device:
 
 ```powershell
@@ -166,10 +180,13 @@ python controller.py pipeline [arguments]
 
 | Argument | Required | Valid values / range | Purpose | Expected result |
 | --- | --- | --- | --- | --- |
+| `--input-mode` | No | `file` or `ftdi` | Selects the read source type | File mode reads from a file, FTDI mode reads from an FTDI device |
 | `--input-device-index` | No | Integer `>= 0` | Selects the FTDI source device index for the read thread | The read thread reads from the chosen FTDI device |
+| `--input-path` | Yes for `file` mode | Readable file path | Input file source for file mode | Bytes are read from the selected file |
 | `--output-mode` | Yes | `file` or `ftdi` | Selects the write destination type | File mode writes to a file, FTDI mode writes to another FTDI device |
 | `--output-path` | Yes for `file` mode | Writable file path | Output file destination for file mode | Bytes are appended to the selected file |
 | `--output-device-index` | Yes for `ftdi` mode | Integer `>= 0` | Selects the FTDI destination device index for FTDI output mode | The write thread writes to the chosen FTDI device |
+| `--overwrite-output` | No | Flag | Replaces the output file instead of appending to it | Makes file-to-file comparisons repeatable |
 | `--bytes-per-read` | No | Integer `> 0` | Number of bytes requested from the FTDI source each read loop | Larger values read larger chunks each cycle |
 | `--bytes-per-write` | No | Integer `> 0` | Maximum number of bytes written from the circular buffer each write loop | Larger values write larger chunks each cycle |
 | `--input-hz` | No | Float `> 0` | Read loop frequency in Hertz | Controls how often the read loop runs |
@@ -179,6 +196,7 @@ python controller.py pipeline [arguments]
 
 Current defaults:
 
+- `--input-mode ftdi`
 - `--input-device-index 0`
 - `--bytes-per-read 8`
 - `--bytes-per-write 8`
@@ -203,6 +221,7 @@ These arguments are supported by the existing controller entrypoint outside the 
 
 The pipeline validates the following before it starts:
 
+- `--input-mode` must be `file` or `ftdi`
 - `--output-mode` must be `file` or `ftdi`
 - `--duration-seconds` must be greater than `0`
 - `--bytes-per-read` must be greater than `0`
@@ -211,6 +230,7 @@ The pipeline validates the following before it starts:
 - `--output-hz` must be greater than `0`
 - `--buffer-capacity` must be greater than `0`
 - `--buffer-capacity` must be at least the larger of the read and write chunk sizes
+- `file` mode input requires `--input-path`
 - `file` mode requires `--output-path`
 - `ftdi` mode requires `--output-device-index`
 
@@ -242,6 +262,7 @@ What each field means:
 Expected successful results:
 
 - In file mode, the output file exists and contains the transferred bytes
+- In file-to-file mode, `demo_input.bin` and `demo_output.bin` can be compared directly
 - In FTDI mode, the destination FTDI device receives the byte stream
 - `Bytes read` and `Bytes written` are both nonzero for an active data source
 - `Buffer size` is normally `0` after a clean stop
@@ -260,6 +281,18 @@ To view the raw bytes:
 ```powershell
 Format-Hex demo_output.bin
 ```
+
+To compare an output file against a reference file byte-for-byte:
+
+```powershell
+python controller.py compare-files demo_output.bin reference_output.bin
+```
+
+Expected result:
+
+- Exit code `0` when both files are identical
+- Exit code `1` when the files differ or one of the paths is invalid
+- A message showing either an exact match or the first differing byte offset
 
 ### Recommended Starting Values
 
@@ -314,7 +347,17 @@ Problem: `Recovery safe stop: True`
 ### Notes
 
 - File mode is the easiest path for demonstration and verification
-- The circular buffer implementation is `DataBuffer` in `ioLibrary.multithreaded_write`
+- The circular buffer implementation is `DataBuffer` in `ioLibrary.data_buffer`
 - The end-to-end pipeline coordinator is `PipelineController` in `ioLibrary.pipeline`
 - The command-line pipeline entrypoint is `controller.py pipeline`
+
+### Testing
+
+Run the automated test suite from the repository root:
+
+```powershell
+pytest -q
+```
+
+The repository includes `tests/conftest.py`, which inserts the project root onto `sys.path` so the tests can import `ioLibrary` and `controller` without requiring a manual `PYTHONPATH` step.
 

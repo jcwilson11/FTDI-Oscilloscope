@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from ._operation import _BaseIoOperation
+from ._operation import ioBaseIoOperation
 from .buffer import ioBuffer
-from .errors import IoLibraryError
+from .errors import ioLibraryError
 
 
-class ioRead(_BaseIoOperation):
+class ioRead(ioBaseIoOperation):
     """Read N bytes from FTDI into an external ioBuffer at a fixed frequency."""
 
     def __init__(
@@ -31,16 +31,16 @@ class ioRead(_BaseIoOperation):
 
     def setN(self, byte_count: int):
         if byte_count <= 0:
-            raise IoLibraryError("byte_count must be greater than zero")
+            raise ioLibraryError("byte_count must be greater than zero")
         self.nBytes = int(byte_count)
         if self.buffer is not None and self.nBytes > self.buffer.size:
-            raise IoLibraryError("byte_count cannot exceed buffer size")
+            raise ioLibraryError("byte_count cannot exceed buffer size")
         return self
 
     def setBuffer(self, buffer: ioBuffer):
         super().setBuffer(buffer)
         if self.nBytes is not None and self.nBytes > buffer.size:
-            raise IoLibraryError("byte_count cannot exceed buffer size")
+            raise ioLibraryError("byte_count cannot exceed buffer size")
         return self
 
     @property
@@ -67,6 +67,6 @@ class ioRead(_BaseIoOperation):
         buffer = self._require_buffer()
         self._require_frequency()
         if self.nBytes is None:
-            raise IoLibraryError("byte_count must be configured before execution")
+            raise ioLibraryError("byte_count must be configured before execution")
         if self.nBytes > buffer.size:
-            raise IoLibraryError("byte_count cannot exceed buffer size")
+            raise ioLibraryError("byte_count cannot exceed buffer size")

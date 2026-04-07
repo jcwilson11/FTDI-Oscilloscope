@@ -1,14 +1,25 @@
 """Public API for the reusable FTDI IO library."""
 
+from ._ftdi_session import FtdiSession, ioFtdiSession
+from ._operation import _BaseIoOperation, ioBaseIoOperation
 from .buffer import ioBuffer
-from .data_buffer import DataBuffer
-from .errors import FtdiError, IoLibraryError
+from .data_buffer import DataBuffer, ioDataBuffer
+from .errors import FtdiError, IoLibraryError, ioFtdiError, ioLibraryError
 from .multithreaded_read import (
     AcquisitionConfig,
     AcquisitionMonitor,
+    FileInputByteStream,
     FtdiByteStream,
     InputScheduler,
+    ReadableByteStream,
     UsbReadController,
+    ioAcquisitionConfig,
+    ioAcquisitionMonitor,
+    ioFileInputByteStream,
+    ioFtdiByteStream,
+    ioInputScheduler,
+    ioReadableByteStream,
+    ioUsbReadController,
 )
 from .multithreaded_write import (
     FileByteStream,
@@ -18,30 +29,66 @@ from .multithreaded_write import (
     ThroughputMonitor,
     TransferConfig,
     UsbWriteController,
+    WritableByteStream,
+    ioFileByteStream,
+    ioFtdiOutputByteStream,
+    ioOutputScheduler,
+    ioRecoveryManager,
+    ioThroughputMonitor,
+    ioTransferConfig,
+    ioUsbWriteController,
+    ioWritableByteStream,
 )
-from .pipeline import PipelineConfig, PipelineController
+from .pipeline import PipelineConfig, PipelineController, ioPipelineConfig, ioPipelineController
 from .reader import ioRead
 from .writer import ioWrite
 
 __all__ = [
+    "_BaseIoOperation",
     "AcquisitionConfig",
     "AcquisitionMonitor",
     "DataBuffer",
+    "FileInputByteStream",
     "FileByteStream",
     "FtdiByteStream",
     "FtdiError",
     "FtdiOutputByteStream",
+    "FtdiSession",
     "InputScheduler",
     "IoLibraryError",
     "OutputScheduler",
     "PipelineConfig",
     "PipelineController",
+    "ReadableByteStream",
     "RecoveryManager",
     "ThroughputMonitor",
     "TransferConfig",
     "UsbReadController",
     "UsbWriteController",
+    "WritableByteStream",
+    "ioAcquisitionConfig",
+    "ioAcquisitionMonitor",
+    "ioBaseIoOperation",
     "ioBuffer",
+    "ioDataBuffer",
+    "ioFileInputByteStream",
+    "ioFtdiByteStream",
+    "ioFtdiError",
+    "ioFtdiOutputByteStream",
+    "ioFtdiSession",
+    "ioFileByteStream",
+    "ioInputScheduler",
+    "ioLibraryError",
+    "ioOutputScheduler",
+    "ioPipelineConfig",
+    "ioPipelineController",
+    "ioReadableByteStream",
     "ioRead",
+    "ioRecoveryManager",
+    "ioThroughputMonitor",
+    "ioTransferConfig",
+    "ioUsbReadController",
+    "ioUsbWriteController",
+    "ioWritableByteStream",
     "ioWrite",
 ]
