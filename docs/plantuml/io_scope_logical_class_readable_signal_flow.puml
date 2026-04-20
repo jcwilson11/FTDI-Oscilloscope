@@ -1,0 +1,109 @@
+@startuml
+title ioScope Logical Class View - Signal Flow and Live Acquisition Slice With Responsibilities
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+
+class ioOscilloscopeController {
+  +Owns live-session startup and shutdown.
+}
+class ioOscilloscopeModel {
+  +Stores waveform data and the active processing pipeline.
+}
+
+class ioLiveOscilloscopeSession {
+  +Owns the live acquisition session and tee-output pipeline.
+}
+class ioLiveSampleHistory {
+  +Stores rolling normalized samples for live rendering.
+}
+class ioTappedReadableByteStream {
+  +Copies live input bytes into sample history while preserving stream reads.
+}
+class ioLiveFileTailByteStream {
+  +Tails a file as a continuously readable byte stream.
+}
+class ioGeneratedWaveformByteStream {
+  +Exposes generated waveforms as a readable byte stream.
+}
+class ioNullWritableByteStream {
+  +Discards tee output while preserving pipeline flow.
+}
+
+interface ioSignalFilter {
+  +Defines one waveform filter step.
+}
+abstract class ioSampleMappingFilterBase {
+  +Shares simple sample-mapping behavior.
+}
+class ioScaleFilter {
+  +Applies vertical scaling.
+}
+class ioOffsetFilter {
+  +Applies vertical shifting.
+}
+class ioFilterPipeline {
+  +Runs filters in deterministic order.
+}
+
+interface ioSignalSource {
+  +Defines one waveform acquisition strategy.
+}
+class ioGeneratedWaveformSource {
+  +Builds deterministic demo waveforms.
+}
+class ioFileWaveformSource {
+  +Loads normalized samples from a file.
+}
+class ioFtdiWaveformSource {
+  +Loads normalized samples from an FTDI device.
+}
+class ioWaveformGenerator {
+  +Selects the active signal source.
+}
+
+interface ioReadableByteStream {
+  +Defines read-side byte stream behavior.
+}
+interface ioWritableByteStream {
+  +Defines write-side byte stream behavior.
+}
+class ioFtdiByteStream {
+  +Reads bytes from an FTDI device.
+}
+class ioPipelineController {
+  +Builds and coordinates the transfer pipeline.
+}
+
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+
+ioLiveOscilloscopeSession --> ioLiveSampleHistory
+ioLiveOscilloscopeSession --> ioTappedReadableByteStream
+ioLiveOscilloscopeSession --> ioLiveFileTailByteStream
+ioLiveOscilloscopeSession --> ioGeneratedWaveformByteStream
+ioLiveOscilloscopeSession --> ioNullWritableByteStream
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioTappedReadableByteStream ..> ioReadableByteStream
+ioNullWritableByteStream ..> ioWritableByteStream
+
+ioSampleMappingFilterBase --|> ioSignalFilter
+ioScaleFilter --|> ioSampleMappingFilterBase
+ioOffsetFilter --|> ioSampleMappingFilterBase
+ioFilterPipeline ..> ioSignalFilter
+
+ioGeneratedWaveformSource ..|> ioSignalSource
+ioFileWaveformSource ..|> ioSignalSource
+ioFtdiWaveformSource ..|> ioSignalSource
+ioWaveformGenerator ..> ioSignalSource
+ioFtdiWaveformSource ..> ioFtdiByteStream
+
+note right of ioLiveOscilloscopeSession
+Live acquisition remains outside the View layer.
+The controller owns the session.
+The session owns the threaded pipeline and sample history.
+end note
+@enduml

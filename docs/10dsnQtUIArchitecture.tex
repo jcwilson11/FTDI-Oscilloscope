@@ -1,474 +1,494 @@
-\section{Assignment Overview \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Assignment Overview}
-\label{Section::Assignment Overview}
+    \section{Assignment Overview \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Assignment Overview}
+    \label{Section::Assignment Overview}
 
-This assignment extends the FTDI oscilloscope project with a Qt-based user interface while preserving the existing MVC architecture, the scale-and-shift processing pipeline, and the multithreaded FTDI transfer path. The current implementation provides two selectable Qt user interfaces, keeps one abstract View boundary, and routes live acquisition through the existing circular-buffer pipeline instead of moving hardware logic into the UI layer.
+    This assignment extends the FTDI oscilloscope project with a Qt-based user interface while preserving the existing MVC architecture, the scale-and-shift processing pipeline, and the multithreaded FTDI transfer path. The current implementation provides two selectable Qt user interfaces, keeps one abstract View boundary, and routes live acquisition through the existing circular-buffer pipeline instead of moving hardware logic into the UI layer.
 
-\section{Requirements \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Requirements}
-\label{Section::Requirements}
+    \section{Requirements \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Requirements}
+    \label{Section::Requirements}
 
-\begin{enumerate}
-    \item The system shall provide two selectable user interfaces.
-    \item The system shall support pipeline processing for scale and shift operations.
-    \item The system shall read from and write to the FTDI device using multithreaded circular buffers.
-    \item Extra credit: The system shall write data to one FTDI device and read data from a second FTDI device using two circular buffers, one for writing and one for reading.
-    \item The implementation shall use one class per file.
-    \item The system architecture shall be documented with at least a class diagram for this assignment.
-    \item The system shall use the FTDI libraries to access the FTDI chips.
-    \item For this assignment, namespaces shall follow the format \texttt{io<ClassName>}.
-\end{enumerate}
+    \begin{enumerate}
+        \item The system shall provide two selectable user interfaces.
+        \item The system shall support pipeline processing for scale and shift operations.
+        \item The system shall read from and write to the FTDI device using multithreaded circular buffers.
+        \item Extra credit: The system shall write data to one FTDI device and read data from a second FTDI device using two circular buffers, one for writing and one for reading.
+        \item The implementation shall use one class per file.
+        \item The system architecture shall be documented with at least a class diagram for this assignment.
+        \item The system shall use the FTDI libraries to access the FTDI chips.
+        \item For this assignment, namespaces shall follow the format \texttt{io<ClassName>}.
+    \end{enumerate}
 
-\section{Architecture Overview \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Architecture Overview}
-\label{Section::Architecture Overview}
+    \section{Architecture Overview \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Architecture Overview}
+    \label{Section::Architecture Overview}
 
-\subsection{Architectural Style}
-The primary user-interface path follows the Model--View--Controller architectural style. The View layer is represented by one abstract Qt-facing boundary, the Controller layer coordinates user intent and live-session behavior, and the Model layer owns waveform state, control state, viewport state, and the active signal-processing pipeline.
+    \subsection{Architectural Style}
+    The primary user-interface path follows the Model--View--Controller architectural style. The View layer is represented by one abstract Qt-facing boundary, the Controller layer coordinates user intent and live-session behavior, and the Model layer owns waveform state, control state, viewport state, and the active signal-processing pipeline.
 
-\subsection{MVC Structure}
-The controller layer is represented by \texttt{ioOscilloscopeController}. It coordinates UI actions, model updates, render-state generation, and live acquisition startup and shutdown.
+    \subsection{MVC Structure}
+    The controller layer is represented by \texttt{ioOscilloscopeController}. It coordinates UI actions, model updates, render-state generation, and live acquisition startup and shutdown.
 
-The model layer is represented by \texttt{ioOscilloscopeModel}. It stores raw samples, processed samples, control state, viewport state, and the current filter pipeline.
+    The model layer is represented by \texttt{ioOscilloscopeModel}. It stores raw samples, processed samples, control state, viewport state, and the current filter pipeline.
 
-The view layer is represented by the abstract class \texttt{ioOscilloscopeView}. The two selectable Qt user interfaces are the concrete subclasses \texttt{ioCompactOscilloscopeView} and \texttt{ioDetailedOscilloscopeView}.
+    The view layer is represented by the abstract class \texttt{ioOscilloscopeView}. The two selectable Qt user interfaces are the concrete subclasses \texttt{ioCompactOscilloscopeView} and \texttt{ioDetailedOscilloscopeView}.
 
-The class \texttt{ioQtScopeWindow} is the top-level Qt host window. It switches between concrete view instances and forwards user selections to the controller, but it is not a second View abstraction.
+    The class \texttt{ioQtScopeWindow} is the top-level Qt host window. It switches between concrete view instances and forwards user selections to the controller, but it is not a second View abstraction.
 
-\subsection{Two Selectable User Interfaces}
-The current implementation provides two selectable Qt user interfaces. The first is \texttt{ioCompactOscilloscopeView}, which emphasizes a compact, controls-first layout and a concise waveform status panel.
+    \subsection{Two Selectable User Interfaces}
+    The current implementation provides two selectable Qt user interfaces. The first is \texttt{ioCompactOscilloscopeView}, which emphasizes a compact, controls-first layout and a concise waveform status panel.
 
-The second is \texttt{ioDetailedOscilloscopeView}, which emphasizes a larger waveform region and a telemetry-oriented detail panel. Both views inherit from \texttt{ioOscilloscopeView}, so the controller renders through one shared View contract.
+    The second is \texttt{ioDetailedOscilloscopeView}, which emphasizes a larger waveform region and a telemetry-oriented detail panel. Both views inherit from \texttt{ioOscilloscopeView}, so the controller renders through one shared View contract.
 
-\subsection{Pipeline Processing Structure}
-Scale and shift operations remain in a dedicated pipe-and-filter path rather than being embedded in the user interface. The model owns an \texttt{ioFilterPipeline}, and the controller updates the model when scale or offset changes.
+    \subsection{Pipeline Processing Structure}
+    Scale and shift operations remain in a dedicated pipe-and-filter path rather than being embedded in the user interface. The model owns an \texttt{ioFilterPipeline}, and the controller updates the model when scale or offset changes.
 
-The pipeline is built from \texttt{ioSignalFilter}, \texttt{ioSampleMappingFilterBase}, \texttt{ioScaleFilter}, and \texttt{ioOffsetFilter}. The filters are applied in deterministic order so the processed waveform is reproducible and easy to reason about.
+    The pipeline is built from \texttt{ioSignalFilter}, \texttt{ioSampleMappingFilterBase}, \texttt{ioScaleFilter}, and \texttt{ioOffsetFilter}. The filters are applied in deterministic order so the processed waveform is reproducible and easy to reason about.
 
-\subsection{FTDI Communication Structure}
-FTDI access is isolated inside \texttt{ioLibrary}. The low-level D2XX session boundary is owned by \texttt{ioFtdiSession}, while the stream-level abstractions \texttt{ioFtdiByteStream} and \texttt{ioFtdiOutputByteStream} expose readable and writable FTDI endpoints to the rest of the system.
+    \subsection{FTDI Communication Structure}
+    FTDI access is isolated inside \texttt{ioLibrary}. The low-level D2XX session boundary is owned by \texttt{ioFtdiSession}, while the stream-level abstractions \texttt{ioFtdiByteStream} and \texttt{ioFtdiOutputByteStream} expose readable and writable FTDI endpoints to the rest of the system.
 
-The professor-facing adapter \texttt{ioFtdiDevice} is defined in \texttt{ftd2xx\_wrapper.py}. It preserves a simple device-oriented API while reusing the canonical session layer.
+    The adapter \texttt{ioFtdiDevice} is defined in \texttt{ftd2xx\_wrapper.py}. It preserves a simple device-oriented API while reusing the canonical session layer.
 
-\subsection{Multithreaded Circular Buffer Structure}
-The required multithreaded transfer path remains outside the UI layer. The class \texttt{ioPipelineController} builds and coordinates a producer-consumer pipeline composed of \texttt{ioUsbReadController}, \texttt{ioDataBuffer}, and \texttt{ioUsbWriteController}.
+    \subsection{Multithreaded Circular Buffer Structure}
+    The required multithreaded transfer path remains outside the UI layer. The class \texttt{ioPipelineController} builds and coordinates a producer-consumer pipeline composed of \texttt{ioUsbReadController}, \texttt{ioDataBuffer}, and \texttt{ioUsbWriteController}.
 
-The class \texttt{ioDataBuffer} is the required bounded thread-safe circular buffer. It supports blocking \texttt{push()} and \texttt{pop()} operations, bounded capacity, synchronized full and empty waiting, and controlled close behavior for safe shutdown.
+    The class \texttt{ioDataBuffer} is the required bounded thread-safe circular buffer. It supports blocking \texttt{push()} and \texttt{pop()} operations, bounded capacity, synchronized full and empty waiting, and controlled close behavior for safe shutdown.
 
-\subsection{Live Session Structure}
-The oscilloscope's live acquisition path is owned by \texttt{ioLiveOscilloscopeSession}. This class creates the transfer pipeline, captures rolling waveform history, and keeps FTDI or file-backed sampling outside the View layer.
+    \subsection{Live Session Structure}
+    The oscilloscope's live acquisition path is owned by \texttt{ioLiveOscilloscopeSession}. This class creates the transfer pipeline, captures rolling waveform history, and keeps FTDI or file-backed sampling outside the View layer.
 
-The live-session helpers \texttt{ioTappedReadableByteStream}, \texttt{ioLiveSampleHistory}, \texttt{ioLiveFileTailByteStream}, \texttt{ioGeneratedWaveformByteStream}, and \texttt{ioNullWritableByteStream} support live acquisition and tee-output behavior without collapsing MVC boundaries.
+    The live-session helpers \texttt{ioTappedReadableByteStream}, \texttt{ioLiveSampleHistory}, \texttt{ioLiveFileTailByteStream}, \texttt{ioGeneratedWaveformByteStream}, and \texttt{ioNullWritableByteStream} support live acquisition and tee-output behavior without collapsing MVC boundaries.
 
-\subsection{Branch Context}
-The earlier \texttt{origin/oscilloscope} branch provided the historical UI scaffold for this assignment. The current \texttt{dev} branch is the canonical architecture path, and the architecture document now reflects the implemented \texttt{io...} class structure rather than the earlier scaffold names.
+    \section{Class List and Responsibilities \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Class List and Responsibilities}
+    \label{Section::Class List and Responsibilities}
 
-\section{Class List and Responsibilities \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Class List and Responsibilities}
-\label{Section::Class List and Responsibilities}
+    \subsection{Bootstrap and CLI Classes}
+    \begin{itemize}
+        \item \texttt{ioScopeShell} \\
+        Responsibility: Runs the oscilloscope shell and persists runtime settings.
 
-\subsection{Bootstrap and CLI Classes}
-\begin{itemize}
-    \item \texttt{ioScopeShell} \\
-    Responsibility: Runs the professor-facing oscilloscope shell and persists runtime settings.
+        \item \texttt{ioPipelineCli} \\
+        Responsibility: Builds transfer configuration and runs the multithreaded FTDI or file pipeline from the command line.
 
-    \item \texttt{ioPipelineCli} \\
-    Responsibility: Builds transfer configuration and runs the multithreaded FTDI or file pipeline from the command line.
+        \item \texttt{ioLegacyFtdiCli} \\
+        Responsibility: Preserves older direct FTDI demo commands for low-level chip interaction.
 
-    \item \texttt{ioLegacyFtdiCli} \\
-    Responsibility: Preserves older direct FTDI demo commands for low-level chip interaction.
+        \item \texttt{ioFileComparator} \\
+        Responsibility: Compares two binary files byte for byte for deterministic transfer verification.
+    \end{itemize}
 
-    \item \texttt{ioFileComparator} \\
-    Responsibility: Compares two binary files byte for byte for deterministic transfer verification.
-\end{itemize}
+    \subsection{Qt MVC Classes}
+    \begin{itemize}
+        \item \texttt{ioOscilloscopeController} \\
+        Responsibility: Coordinates UI actions, model updates, render-state fan-out, and live-session control.
 
-\subsection{Qt MVC Classes}
-\begin{itemize}
-    \item \texttt{ioOscilloscopeController} \\
-    Responsibility: Coordinates UI actions, model updates, render-state fan-out, and live-session control.
+        \item \texttt{ioOscilloscopeModel} \\
+        Responsibility: Stores waveform data, viewport state, control state, and the active processing pipeline.
 
-    \item \texttt{ioOscilloscopeModel} \\
-    Responsibility: Stores waveform data, viewport state, control state, and the active processing pipeline.
+        \item \texttt{ioOscilloscopeView} \\
+        Responsibility: Defines the single abstract View contract used by both selectable Qt user interfaces.
 
-    \item \texttt{ioOscilloscopeView} \\
-    Responsibility: Defines the single abstract View contract used by both selectable Qt user interfaces.
+        \item \texttt{ioCompactOscilloscopeView} \\
+        Responsibility: Implements the compact controls-first Qt user interface.
 
-    \item \texttt{ioCompactOscilloscopeView} \\
-    Responsibility: Implements the compact controls-first Qt user interface.
+        \item \texttt{ioDetailedOscilloscopeView} \\
+        Responsibility: Implements the detailed waveform-first Qt user interface.
 
-    \item \texttt{ioDetailedOscilloscopeView} \\
-    Responsibility: Implements the detailed waveform-first Qt user interface.
+        \item \texttt{ioQtScopeWindow} \\
+        Responsibility: Hosts the selectable Qt views and forwards top-level UI selections to the controller.
 
-    \item \texttt{ioQtScopeWindow} \\
-    Responsibility: Hosts the selectable Qt views and forwards top-level UI selections to the controller.
+        \item \texttt{ioOscilloscopeWindow} \\
+        Responsibility: Defines the generic window-host protocol used outside the primary Qt path.
 
-    \item \texttt{ioOscilloscopeWindow} \\
-    Responsibility: Defines the generic window-host protocol used outside the primary Qt path.
+        \item \texttt{ioTkOscilloscopeWindow} \\
+        Responsibility: Preserves the older Tk-based oscilloscope window as a legacy compatibility path.
 
-    \item \texttt{ioTkOscilloscopeWindow} \\
-    Responsibility: Preserves the older Tk-based oscilloscope window as a legacy compatibility path.
+        \item \texttt{ioControlState} \\
+        Responsibility: Stores sampling, source-selection, FTDI, scale, offset, tee-output, and active-view settings.
 
-    \item \texttt{ioControlState} \\
-    Responsibility: Stores sampling, source-selection, FTDI, scale, offset, tee-output, and active-view settings.
+        \item \texttt{ioViewportState} \\
+        Responsibility: Stores the visible waveform window position and size.
 
-    \item \texttt{ioViewportState} \\
-    Responsibility: Stores the visible waveform window position and size.
+        \item \texttt{ioRenderState} \\
+        Responsibility: Carries immutable render data from the controller into each concrete view.
 
-    \item \texttt{ioRenderState} \\
-    Responsibility: Carries immutable render data from the controller into each concrete view.
+        \item \texttt{ioScopeSettingsStore} \\
+        Responsibility: Loads and saves the oscilloscope settings JSON payload.
+    \end{itemize}
 
-    \item \texttt{ioScopeSettingsStore} \\
-    Responsibility: Loads and saves the oscilloscope settings JSON payload.
-\end{itemize}
+    \subsection{Live Session Support Classes}
+    \begin{itemize}
+        \item \texttt{ioLiveOscilloscopeSession} \\
+        Responsibility: Owns the live acquisition session and its tee-output pipeline.
 
-\subsection{Live Session Support Classes}
-\begin{itemize}
-    \item \texttt{ioLiveOscilloscopeSession} \\
-    Responsibility: Owns the live acquisition session and its tee-output pipeline.
+        \item \texttt{ioLiveSampleHistory} \\
+        Responsibility: Stores rolling normalized samples for live waveform rendering.
 
-    \item \texttt{ioLiveSampleHistory} \\
-    Responsibility: Stores rolling normalized samples for live waveform rendering.
+        \item \texttt{ioTappedReadableByteStream} \\
+        Responsibility: Mirrors live input bytes into sample history while preserving readable-stream behavior.
 
-    \item \texttt{ioTappedReadableByteStream} \\
-    Responsibility: Mirrors live input bytes into sample history while preserving readable-stream behavior.
+        \item \texttt{ioLiveFileTailByteStream} \\
+        Responsibility: Tails a file as a continuously readable byte stream.
 
-    \item \texttt{ioLiveFileTailByteStream} \\
-    Responsibility: Tails a file as a continuously readable byte stream.
+        \item \texttt{ioGeneratedWaveformByteStream} \\
+        Responsibility: Exposes generated demo waveforms as a readable byte stream.
 
-    \item \texttt{ioGeneratedWaveformByteStream} \\
-    Responsibility: Exposes generated demo waveforms as a readable byte stream.
+        \item \texttt{ioNullWritableByteStream} \\
+        Responsibility: Discards tee output while preserving pipeline flow.
+    \end{itemize}
 
-    \item \texttt{ioNullWritableByteStream} \\
-    Responsibility: Discards tee output while preserving pipeline flow.
-\end{itemize}
+    \subsection{Signal Pipeline Classes}
+    \begin{itemize}
+        \item \texttt{ioSignalFilter} \\
+        Responsibility: Defines the interface for one waveform-processing stage.
 
-\subsection{Signal Pipeline Classes}
-\begin{itemize}
-    \item \texttt{ioSignalFilter} \\
-    Responsibility: Defines the interface for one waveform-processing stage.
+        \item \texttt{ioSampleMappingFilterBase} \\
+        Responsibility: Shares one-sample-at-a-time transform behavior for simple filters.
 
-    \item \texttt{ioSampleMappingFilterBase} \\
-    Responsibility: Shares one-sample-at-a-time transform behavior for simple filters.
+        \item \texttt{ioScaleFilter} \\
+        Responsibility: Applies the vertical scale transformation.
 
-    \item \texttt{ioScaleFilter} \\
-    Responsibility: Applies the vertical scale transformation.
+        \item \texttt{ioOffsetFilter} \\
+        Responsibility: Applies the vertical shift transformation.
 
-    \item \texttt{ioOffsetFilter} \\
-    Responsibility: Applies the vertical shift transformation.
+        \item \texttt{ioFilterPipeline} \\
+        Responsibility: Applies the configured waveform filters in deterministic order.
+    \end{itemize}
 
-    \item \texttt{ioFilterPipeline} \\
-    Responsibility: Applies the configured waveform filters in deterministic order.
-\end{itemize}
+    \subsection{Signal Source and Theme Classes}
+    \begin{itemize}
+        \item \texttt{ioSignalSource} \\
+        Responsibility: Defines the strategy contract for waveform acquisition.
 
-\subsection{Signal Source and Theme Classes}
-\begin{itemize}
-    \item \texttt{ioSignalSource} \\
-    Responsibility: Defines the strategy contract for waveform acquisition.
+        \item \texttt{ioGeneratedWaveformSource} \\
+        Responsibility: Produces deterministic generated demo waveforms.
 
-    \item \texttt{ioGeneratedWaveformSource} \\
-    Responsibility: Produces deterministic generated demo waveforms.
+        \item \texttt{ioFileWaveformSource} \\
+        Responsibility: Produces normalized samples from file input.
 
-    \item \texttt{ioFileWaveformSource} \\
-    Responsibility: Produces normalized samples from file input.
+        \item \texttt{ioFtdiWaveformSource} \\
+        Responsibility: Produces normalized samples from FTDI device input.
 
-    \item \texttt{ioFtdiWaveformSource} \\
-    Responsibility: Produces normalized samples from FTDI device input.
+        \item \texttt{ioWaveformGenerator} \\
+        Responsibility: Selects the active waveform source from the current control state.
 
-    \item \texttt{ioWaveformGenerator} \\
-    Responsibility: Selects the active waveform source from the current control state.
+        \item \texttt{ioViewTheme} \\
+        Responsibility: Defines the theme contract for a view.
 
-    \item \texttt{ioViewTheme} \\
-    Responsibility: Defines the theme contract for a view.
+        \item \texttt{ioStaticThemeBase} \\
+        Responsibility: Shares static theme metadata behavior.
 
-    \item \texttt{ioStaticThemeBase} \\
-    Responsibility: Shares static theme metadata behavior.
+        \item \texttt{ioPortraitTheme} \\
+        Responsibility: Supplies the portrait-oriented palette used by the compact view.
 
-    \item \texttt{ioPortraitTheme} \\
-    Responsibility: Supplies the portrait-oriented palette used by the compact view.
+        \item \texttt{ioLandscapeTheme} \\
+        Responsibility: Supplies the landscape-oriented palette used by the detailed view.
+    \end{itemize}
 
-    \item \texttt{ioLandscapeTheme} \\
-    Responsibility: Supplies the landscape-oriented palette used by the detailed view.
-\end{itemize}
+    \subsection{FTDI Stream and Session Classes}
+    \begin{itemize}
+        \item \texttt{ioFtdiDevice} \\
+        Responsibility: Provides the FTDI device adapter over the session layer.
 
-\subsection{FTDI Stream and Session Classes}
-\begin{itemize}
-    \item \texttt{ioFtdiDevice} \\
-    Responsibility: Provides the canonical professor-facing FTDI device adapter over the session layer.
+        \item \texttt{ioLibraryError} \\
+        Responsibility: Defines the base runtime error for \texttt{ioLibrary}.
 
-    \item \texttt{ioLibraryError} \\
-    Responsibility: Defines the base runtime error for \texttt{ioLibrary}.
+        \item \texttt{ioFtdiError} \\
+        Responsibility: Defines FTDI-specific library failures.
 
-    \item \texttt{ioFtdiError} \\
-    Responsibility: Defines FTDI-specific library failures.
+        \item \texttt{ioStreamLifecycle} \\
+        Responsibility: Defines open and close behavior for stream implementations.
 
-    \item \texttt{ioStreamLifecycle} \\
-    Responsibility: Defines open and close behavior for stream implementations.
+        \item \texttt{ioReadableByteStream} \\
+        Responsibility: Defines the read-side byte-stream protocol.
 
-    \item \texttt{ioReadableByteStream} \\
-    Responsibility: Defines the read-side byte-stream protocol.
+        \item \texttt{ioWritableByteStream} \\
+        Responsibility: Defines the write-side byte-stream protocol.
 
-    \item \texttt{ioWritableByteStream} \\
-    Responsibility: Defines the write-side byte-stream protocol.
+        \item \texttt{ioAbstractReadableByteStream} \\
+        Responsibility: Shares readable-stream lifecycle and validation behavior.
 
-    \item \texttt{ioAbstractReadableByteStream} \\
-    Responsibility: Shares readable-stream lifecycle and validation behavior.
+        \item \texttt{ioAbstractWritableByteStream} \\
+        Responsibility: Shares writable-stream lifecycle and validation behavior.
 
-    \item \texttt{ioAbstractWritableByteStream} \\
-    Responsibility: Shares writable-stream lifecycle and validation behavior.
+        \item \texttt{ioAbstractSessionBackedByteStream} \\
+        Responsibility: Shares FTDI-session-backed stream behavior.
 
-    \item \texttt{ioAbstractSessionBackedByteStream} \\
-    Responsibility: Shares FTDI-session-backed stream behavior.
+        \item \texttt{ioAbstractFileBackedByteStream} \\
+        Responsibility: Shares file-backed stream behavior.
 
-    \item \texttt{ioAbstractFileBackedByteStream} \\
-    Responsibility: Shares file-backed stream behavior.
+        \item \texttt{ioFtdiByteStream} \\
+        Responsibility: Reads bytes from an FTDI device.
 
-    \item \texttt{ioFtdiByteStream} \\
-    Responsibility: Reads bytes from an FTDI device.
+        \item \texttt{ioFtdiOutputByteStream} \\
+        Responsibility: Writes bytes to an FTDI device.
 
-    \item \texttt{ioFtdiOutputByteStream} \\
-    Responsibility: Writes bytes to an FTDI device.
+        \item \texttt{ioFileInputByteStream} \\
+        Responsibility: Reads bytes from a file.
 
-    \item \texttt{ioFileInputByteStream} \\
-    Responsibility: Reads bytes from a file.
+        \item \texttt{ioFileByteStream} \\
+        Responsibility: Writes bytes to a file.
 
-    \item \texttt{ioFileByteStream} \\
-    Responsibility: Writes bytes to a file.
+        \item \texttt{ioFtdiSession} \\
+        Responsibility: Owns the D2XX session lifecycle and FTDI configuration boundary.
+    \end{itemize}
 
-    \item \texttt{ioFtdiSession} \\
-    Responsibility: Owns the D2XX session lifecycle and FTDI configuration boundary.
-\end{itemize}
+    \subsection{Multithreaded Transfer Pipeline Classes}
+    \begin{itemize}
+        \item \texttt{ioPipelineConfig} \\
+        Responsibility: Stores end-to-end transfer settings for the read and write pipeline.
 
-\subsection{Multithreaded Transfer Pipeline Classes}
-\begin{itemize}
-    \item \texttt{ioPipelineConfig} \\
-    Responsibility: Stores end-to-end transfer settings for the read and write pipeline.
+        \item \texttt{ioAcquisitionConfig} \\
+        Responsibility: Stores read-worker timing and chunk-size settings.
 
-    \item \texttt{ioAcquisitionConfig} \\
-    Responsibility: Stores read-worker timing and chunk-size settings.
+        \item \texttt{ioTransferConfig} \\
+        Responsibility: Stores write-worker timing and chunk-size settings.
 
-    \item \texttt{ioTransferConfig} \\
-    Responsibility: Stores write-worker timing and chunk-size settings.
+        \item \texttt{ioPipelineController} \\
+        Responsibility: Builds and coordinates the read worker, circular buffer, and write worker.
 
-    \item \texttt{ioPipelineController} \\
-    Responsibility: Builds and coordinates the read worker, circular buffer, and write worker.
+        \item \texttt{ioDataBuffer} \\
+        Responsibility: Implements the required bounded thread-safe circular buffer.
 
-    \item \texttt{ioDataBuffer} \\
-    Responsibility: Implements the required bounded thread-safe circular buffer.
+        \item \texttt{ioByteCountMonitorBase} \\
+        Responsibility: Shares byte-count and throughput timing behavior.
 
-    \item \texttt{ioByteCountMonitorBase} \\
-    Responsibility: Shares byte-count and throughput timing behavior.
+        \item \texttt{ioThreadedWorkerBase} \\
+        Responsibility: Shares worker thread lifecycle behavior.
 
-    \item \texttt{ioThreadedWorkerBase} \\
-    Responsibility: Shares worker thread lifecycle behavior.
+        \item \texttt{ioAbstractThreadedStreamWorker} \\
+        Responsibility: Shares threaded stream-worker behavior for the read and write controllers.
 
-    \item \texttt{ioAbstractThreadedStreamWorker} \\
-    Responsibility: Shares threaded stream-worker behavior for the read and write controllers.
+        \item \texttt{ioUsbReadController} \\
+        Responsibility: Reads bytes from a stream and pushes them into the circular buffer.
 
-    \item \texttt{ioUsbReadController} \\
-    Responsibility: Reads bytes from a stream and pushes them into the circular buffer.
+        \item \texttt{ioUsbWriteController} \\
+        Responsibility: Pops bytes from the circular buffer and writes them to a stream.
 
-    \item \texttt{ioUsbWriteController} \\
-    Responsibility: Pops bytes from the circular buffer and writes them to a stream.
+        \item \texttt{ioRecoveryManager} \\
+        Responsibility: Coordinates safe-stop recovery behavior across worker threads.
 
-    \item \texttt{ioRecoveryManager} \\
-    Responsibility: Coordinates safe-stop recovery behavior across worker threads.
+        \item \texttt{ioAcquisitionMonitor} \\
+        Responsibility: Tracks read counts and read throughput.
 
-    \item \texttt{ioAcquisitionMonitor} \\
-    Responsibility: Tracks read counts and read throughput.
+        \item \texttt{ioThroughputMonitor} \\
+        Responsibility: Tracks write counts and write throughput.
 
-    \item \texttt{ioThroughputMonitor} \\
-    Responsibility: Tracks write counts and write throughput.
+        \item \texttt{ioRateSchedulerBase} \\
+        Responsibility: Shares fixed-rate scheduling behavior.
 
-    \item \texttt{ioRateSchedulerBase} \\
-    Responsibility: Shares fixed-rate scheduling behavior.
+        \item \texttt{ioInputScheduler} \\
+        Responsibility: Applies read-side timing policy.
 
-    \item \texttt{ioInputScheduler} \\
-    Responsibility: Applies read-side timing policy.
+        \item \texttt{ioOutputScheduler} \\
+        Responsibility: Applies write-side timing policy.
+    \end{itemize}
 
-    \item \texttt{ioOutputScheduler} \\
-    Responsibility: Applies write-side timing policy.
-\end{itemize}
+    \subsection{Legacy Compatibility Classes}
+    \begin{itemize}
+        \item \texttt{ioBuffer} \\
+        Responsibility: Preserves the older fixed-size buffer abstraction used by the original FTDI operation path.
 
-\subsection{Legacy Compatibility Classes}
-\begin{itemize}
-    \item \texttt{ioBuffer} \\
-    Responsibility: Preserves the older fixed-size buffer abstraction used by the original FTDI operation path.
+        \item \texttt{ioBaseIoOperation} \\
+        Responsibility: Shares the older timed FTDI operation behavior.
 
-    \item \texttt{ioBaseIoOperation} \\
-    Responsibility: Shares the older timed FTDI operation behavior.
+        \item \texttt{ioRead} \\
+        Responsibility: Implements the legacy FTDI read operation over \texttt{ioBuffer}.
 
-    \item \texttt{ioRead} \\
-    Responsibility: Implements the legacy FTDI read operation over \texttt{ioBuffer}.
+        \item \texttt{ioWrite} \\
+        Responsibility: Implements the legacy FTDI write operation over \texttt{ioBuffer}.
+    \end{itemize}
 
-    \item \texttt{ioWrite} \\
-    Responsibility: Implements the legacy FTDI write operation over \texttt{ioBuffer}.
-\end{itemize}
+    \section{Namespace and File Organization \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Namespace and File Organization}
+    \label{Section::Namespace and File Organization}
 
-\section{Namespace and File Organization \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Namespace and File Organization}
-\label{Section::Namespace and File Organization}
+    \subsection{Namespace Convention}
+    The canonical implementation follows the required \texttt{io<ClassName>} naming pattern. Examples include \texttt{ioOscilloscopeController}, \texttt{ioOscilloscopeModel}, \texttt{ioOscilloscopeView}, \texttt{ioDataBuffer}, and \texttt{ioFtdiDevice}.
 
-\subsection{Namespace Convention}
-The canonical implementation follows the required \texttt{io<ClassName>} naming pattern. Examples include \texttt{ioOscilloscopeController}, \texttt{ioOscilloscopeModel}, \texttt{ioOscilloscopeView}, \texttt{ioDataBuffer}, and \texttt{ioFtdiDevice}.
+    Compatibility aliases such as \texttt{OscilloscopeController}, \texttt{DataBuffer}, and \texttt{FtdiDevice} are still present for older demos and tests, but they are not the primary submission path. The current architecture, diagrams, and professor-facing documentation use the canonical \texttt{io...} class names.
 
-Compatibility aliases such as \texttt{OscilloscopeController}, \texttt{DataBuffer}, and \texttt{FtdiDevice} are still present for older demos and tests, but they are not the primary submission path. The current architecture, diagrams, and professor-facing documentation use the canonical \texttt{io...} class names.
+    \subsection{One Class Per File}
+    The canonical implementation follows the one-class-per-file rule for the actual class definitions used in the architecture. The repository also contains re-export modules and compatibility surfaces, but those files do not introduce additional primary classes and should be interpreted as compatibility infrastructure rather than violations of the design rule.
 
-\subsection{One Class Per File}
-The canonical implementation follows the one-class-per-file rule for the actual class definitions used in the architecture. The repository also contains re-export modules and compatibility surfaces, but those files do not introduce additional primary classes and should be interpreted as compatibility infrastructure rather than violations of the design rule.
+    \section{Two Selectable User Interfaces \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Two Selectable User Interfaces}
+    \label{Section::Two Selectable User Interfaces}
 
-\section{Two Selectable User Interfaces \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Two Selectable User Interfaces}
-\label{Section::Two Selectable User Interfaces}
+    \subsection{View 1}
+    The first selectable Qt user interface is \texttt{ioCompactOscilloscopeView}. It presents a compact waveform display with a short status summary and is intended for fast interaction and configuration review.
 
-\subsection{View 1}
-The first selectable Qt user interface is \texttt{ioCompactOscilloscopeView}. It presents a compact waveform display with a short status summary and is intended for fast interaction and configuration review.
+    \subsection{View 2}
+    The second selectable Qt user interface is \texttt{ioDetailedOscilloscopeView}. It presents a larger waveform area and a richer telemetry panel for more detailed inspection of the current oscilloscope session.
 
-\subsection{View 2}
-The second selectable Qt user interface is \texttt{ioDetailedOscilloscopeView}. It presents a larger waveform area and a richer telemetry panel for more detailed inspection of the current oscilloscope session.
+    \subsection{View Selection Mechanism}
+    View selection is managed by \texttt{ioQtScopeWindow}. The window hosts concrete instances of both Qt views, switches the active visible view at runtime, and forwards view-selection and control changes to \texttt{ioOscilloscopeController}.
 
-\subsection{View Selection Mechanism}
-View selection is managed by \texttt{ioQtScopeWindow}. The window hosts concrete instances of both Qt views, switches the active visible view at runtime, and forwards view-selection and control changes to \texttt{ioOscilloscopeController}.
+    \subsection{Maintaining One View Abstraction}
+    The design intentionally uses one abstract View boundary only. Both selectable Qt user interfaces inherit from \texttt{ioOscilloscopeView}, and the host window is documented as a shell around those views rather than a second View abstraction.
 
-\subsection{Maintaining One View Abstraction}
-The design intentionally uses one abstract View boundary only. Both selectable Qt user interfaces inherit from \texttt{ioOscilloscopeView}, and the host window is documented as a shell around those views rather than a second View abstraction.
+    \section{Pipeline Processing for Scale and Shift \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Pipeline Processing for Scale and Shift}
+    \label{Section::Pipeline Processing for Scale and Shift}
 
-\section{Pipeline Processing for Scale and Shift \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Pipeline Processing for Scale and Shift}
-\label{Section::Pipeline Processing for Scale and Shift}
+    \subsection{Scale Stage}
+    The scale stage is implemented by \texttt{ioScaleFilter}. It multiplies each sample by the configured scale factor before rendering.
 
-\subsection{Scale Stage}
-The scale stage is implemented by \texttt{ioScaleFilter}. It multiplies each sample by the configured scale factor before rendering.
+    \subsection{Shift Stage}
+    The shift stage is implemented by \texttt{ioOffsetFilter}. It adds the configured offset value to each sample before rendering.
 
-\subsection{Shift Stage}
-The shift stage is implemented by \texttt{ioOffsetFilter}. It adds the configured offset value to each sample before rendering.
+    \subsection{Pipeline Data Flow}
+    Pipeline processing is organized through \texttt{ioFilterPipeline}, which owns the ordered list of filter stages. The model rebuilds or reuses the pipeline as controls change, and the processed result is then converted into an immutable \texttt{ioRenderState} for the views.
 
-\subsection{Pipeline Data Flow}
-Pipeline processing is organized through \texttt{ioFilterPipeline}, which owns the ordered list of filter stages. The model rebuilds or reuses the pipeline as controls change, and the processed result is then converted into an immutable \texttt{ioRenderState} for the views.
+    \section{FTDI Communication and Circular Buffers \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!FTDI Communication and Circular Buffers}
+    \label{Section::FTDI Communication and Circular Buffers}
 
-\section{FTDI Communication and Circular Buffers \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!FTDI Communication and Circular Buffers}
-\label{Section::FTDI Communication and Circular Buffers}
+    \subsection{FTDI Access}
+    FTDI access is handled through a dedicated backend layer. The session layer is implemented by \texttt{ioFtdiSession}, and the stream-facing FTDI endpoints are implemented by \texttt{ioFtdiByteStream} and \texttt{ioFtdiOutputByteStream}.
 
-\subsection{FTDI Access}
-FTDI access is handled through a dedicated backend layer. The session layer is implemented by \texttt{ioFtdiSession}, and the stream-facing FTDI endpoints are implemented by \texttt{ioFtdiByteStream} and \texttt{ioFtdiOutputByteStream}.
+    The oscilloscope package itself consumes FTDI input through \texttt{ioFtdiWaveformSource} and live-session helpers rather than importing driver details into the View layer. This keeps FTDI-specific behavior localized and testable.
 
-The oscilloscope package itself consumes FTDI input through \texttt{ioFtdiWaveformSource} and live-session helpers rather than importing driver details into the View layer. This keeps FTDI-specific behavior localized and testable.
+    \subsection{Read and Write Threads}
+    The multithreaded transfer structure uses separate worker threads for reading and writing. The read thread is implemented by \texttt{ioUsbReadController}, and the write thread is implemented by \texttt{ioUsbWriteController}.
 
-\subsection{Read and Write Threads}
-The multithreaded transfer structure uses separate worker threads for reading and writing. The read thread is implemented by \texttt{ioUsbReadController}, and the write thread is implemented by \texttt{ioUsbWriteController}.
+    These two worker classes are coordinated by \texttt{ioPipelineController}. Their loops are regulated by \texttt{ioInputScheduler} and \texttt{ioOutputScheduler}, while status and failure handling are delegated to the monitor and recovery classes.
 
-These two worker classes are coordinated by \texttt{ioPipelineController}. Their loops are regulated by \texttt{ioInputScheduler} and \texttt{ioOutputScheduler}, while status and failure handling are delegated to the monitor and recovery classes.
+    \subsection{Circular Buffer Integration}
+    The circular buffer integration is centered on \texttt{ioDataBuffer}. The read worker pushes newly acquired bytes into the shared circular buffer, and the write worker removes buffered bytes from that same buffer for file or FTDI output.
 
-\subsection{Circular Buffer Integration}
-The circular buffer integration is centered on \texttt{ioDataBuffer}. The read worker pushes newly acquired bytes into the shared circular buffer, and the write worker removes buffered bytes from that same buffer for file or FTDI output.
+    The current branch implements the required one-buffer producer-consumer design. The extra-credit two-device and two-buffer extension is documented as future work rather than as a completed feature in this branch.
 
-The current branch implements the required one-buffer producer-consumer design. The extra-credit two-device and two-buffer extension is documented as future work rather than as a completed feature in this branch.
+    \subsection{Live Acquisition Integration}
+    In live oscilloscope mode, \texttt{ioLiveOscilloscopeSession} creates the input stream, the optional tee-output stream, the transfer configuration, and the \texttt{ioPipelineController}. This keeps the live sampling path aligned with the assignment's multithreaded circular-buffer requirement while still preserving MVC separation.
 
-\subsection{Live Acquisition Integration}
-In live oscilloscope mode, \texttt{ioLiveOscilloscopeSession} creates the input stream, the optional tee-output stream, the transfer configuration, and the \texttt{ioPipelineController}. This keeps the live sampling path aligned with the assignment's multithreaded circular-buffer requirement while still preserving MVC separation.
-
-\section{4+1 Diagram Set \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!4+1 Diagram Set}
-\label{Section::4+1 Diagram Set}
-
-\begin{itemize}
-    \item \texttt{docs/plantuml/io\_scope\_logical\_class.puml} \\
-    Purpose: Canonical logical class view showing the implemented classes and their relationships.
-
-    \item \texttt{docs/plantuml/io\_scope\_logical\_class\_readable.puml} \\
-    Purpose: Readable logical class view with short human-language responsibilities for grading and presentation.
-
-    \item \texttt{docs/plantuml/io\_scope\_process.puml} \\
-    Purpose: Process view showing the FTDI read thread, shared circular buffer, write thread, and live-session interaction.
-
-    \item \texttt{docs/plantuml/io\_scope\_development.puml} \\
-    Purpose: Development view showing the package and file organization of the current codebase.
-
-    \item \texttt{docs/plantuml/io\_scope\_physical.puml} \\
-    Purpose: Physical view showing the runtime environment, FTDI DLL dependency, and hardware deployment context.
-
-    \item \texttt{docs/plantuml/io\_scope\_scenario\_sequence.puml} \\
-    Purpose: Scenario view showing the user flow from startup through selection, processing, and rendering.
-\end{itemize}
-
-Supporting diagrams are also included in \texttt{docs/plantuml/}, including startup, controls, package, runtime-component, deployment, object, and multithreaded pipeline views.
-
-\section{Class Diagram \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Class Diagram}
-\label{Section::Class Diagram}
-
-The canonical class diagram for this assignment is the logical class view in \texttt{docs/plantuml/io\_scope\_logical\_class.puml}. The readable grading version is \texttt{docs/plantuml/io\_scope\_logical\_class\_readable.puml}.
-
-\begin{figure}[H]
-    \centering
-    \IfFileExists{plantuml/io_scope_logical_class_readable.png}{
-        \includegraphics[height=0.8\textheight]{plantuml/io_scope_logical_class_readable.png}
-    }{
-        \fbox{
-            \parbox{0.82\textwidth}{
-                \textbf{Class diagram asset note.} The submitted source-of-truth class diagrams are the PlantUML files
-                \texttt{docs/plantuml/io\_scope\_logical\_class.puml} and
-                \texttt{docs/plantuml/io\_scope\_logical\_class\_readable.puml}. If a rendered PNG is not present in the build
-                directory, those PlantUML sources remain the authoritative architecture artifacts for the submission.
+    \providecommand{\ioSvgPlantumlFigure}[4]{
+    \begin{figure}[!htbp]
+        \centering
+        \IfFileExists{svg/#1.svg}{
+            \includesvg[width=#4\linewidth]{svg/#1.svg}
+        }{
+            \fbox{
+                \parbox{0.82\textwidth}{
+                    \textbf{Diagram asset note.} Render this figure from the
+                    corresponding source diagram.
+                }
             }
         }
+        \caption{#2}
+        \label{#3}
+    \end{figure}
     }
-    \caption{Class diagram for the current oscilloscope system architecture}
-    \label{fig:class_diagram}
-\end{figure}
 
-\section{AI Prompt and Generated Output \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!AI Prompt and Generated Output}
-\label{Section::AI Prompt and Generated Output}
+    \section{4+1 Diagram Set \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!4+1 Diagram Set}
+    \label{Section::4+1 Diagram Set}
 
-\subsection{Prompt Given to the AI Tool}
-The AI tool was given a prompt requesting a Qt-based MVC redesign with one abstract View and two selectable concrete Qt user interfaces. The prompt required one-class-per-file organization, canonical \texttt{io<ClassName>} naming, preservation of the existing scale-and-shift pipe-and-filter design, preservation of the multithreaded circular-buffer FTDI transfer path, and use of the earlier \texttt{origin/oscilloscope} branch as historical source material rather than as the canonical final architecture.
+    \subsection{Logical View}
+    The logical view captures the implemented class structure, the major architectural responsibilities, and the key relationships that define the Qt MVC path, the signal-processing path, the FTDI backend, and the multithreaded transfer pipeline. It is presented as one compact overview plus focused slices for MVC structure, signal flow, FTDI streams, the transfer pipeline, and readable grading variants.
 
-\subsection{Generated Output Summary}
-The generated output established the current Qt architecture direction by introducing the abstract View boundary, the two concrete Qt user interfaces, the Qt host window, and the supporting controller and model updates needed to preserve MVC behavior. Additional refinement was then performed to align naming, strengthen abstraction boundaries, preserve compatibility with the existing codebase, and integrate live FTDI or file-backed acquisition through the existing backend pipeline.
+    \ioSvgPlantumlFigure{io_scope_logical_class}{Logical Class Overview}{fig:io_scope_logical_class}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_mvc}{Logical Class Slice: Qt MVC}{fig:io_scope_logical_class_mvc}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_signal_flow}{Logical Class Slice: Signal Flow and Live Acquisition}{fig:io_scope_logical_class_signal_flow}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_ftdi_streams}{Logical Class Slice: FTDI Streams and Session}{fig:io_scope_logical_class_ftdi_streams}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_transfer_pipeline}{Logical Class Slice: Multithreaded Transfer Pipeline}{fig:io_scope_logical_class_transfer_pipeline}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable}{Readable Logical Class Overview}{fig:io_scope_logical_class_readable}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_mvc}{Readable Class Diagram Slice: Qt MVC}{fig:io_scope_logical_class_readable_mvc}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_signal_flow}{Readable Class Diagram Slice: Signal Flow and Live Acquisition}{fig:io_scope_logical_class_readable_signal_flow}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_ftdi_streams}{Readable Class Diagram Slice: FTDI Streams and Session}{fig:io_scope_logical_class_readable_ftdi_streams}{1.0}
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_transfer_pipeline}{Readable Class Diagram Slice: Multithreaded Transfer Pipeline}{fig:io_scope_logical_class_readable_transfer_pipeline}{1.0}
 
-\section{Implementation Notes and Changes \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Implementation Notes and Changes}
-\label{Section::Implementation Notes and Changes}
+    \subsection{Process View}
+    The process view explains the runtime collaboration among the active worker threads and the shared circular-buffer path used during live acquisition and tee-output behavior.
 
-After the initial AI-generated implementation was produced, several revisions were made to align the final design with the assignment requirements and the evolving codebase. The Qt classes were made import-safe for environments where \texttt{PySide6} and \texttt{pyqtgraph} are unavailable, the controller was updated to fan out render state to both concrete views while tracking the active visible view, the live acquisition path was moved into \texttt{ioLiveOscilloscopeSession}, and the FTDI adapter surface was aligned with the \texttt{io<ClassName>} naming rule through canonical \texttt{ioFtdiDevice} naming plus preserved compatibility aliases.
+    \ioSvgPlantumlFigure{io_scope_process}{Process View}{fig:io_scope_process}{1.0}
 
-\section{Proof of Functionality \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Proof of Functionality}
-\label{Section::Proof of Functionality}
+    \subsection{Development View}
+    The development view documents the current codebase organization at the file and package level so the one-class-per-file structure, compatibility surfaces, and major test boundaries can be graded directly. It is presented as one overview plus focused slices for bootstrap and MVC files, signal and live-session files, ioLibrary stream files, and ioLibrary pipeline and legacy files.
 
-\begin{itemize}
-    \item Switching between the compact and detailed Qt user interfaces.
-    \item Displaying waveform data in the active Qt user interface.
-    \item Applying scale and offset processing through the filter pipeline.
-    \item Reading from FTDI or file-backed sources through the live-session path.
-    \item Writing tee output to a file or FTDI sink through the multithreaded transfer pipeline.
-    \item Demonstrating headless Qt startup through \texttt{python controller.py scope-qt --headless}.
-\end{itemize}
+    \ioSvgPlantumlFigure{io_scope_development}{Development View Overview}{fig:io_scope_development}{1.0}
+    \ioSvgPlantumlFigure{io_scope_development_bootstrap_mvc}{Development Slice: Bootstrap and MVC Files}{fig:io_scope_development_bootstrap_mvc}{1.0}
+    \ioSvgPlantumlFigure{io_scope_development_signal_live}{Development Slice: Signal, Theme, and Live Session Files}{fig:io_scope_development_signal_live}{1.0}
+    \ioSvgPlantumlFigure{io_scope_development_iolibrary_streams}{Development Slice: ioLibrary Stream Files}{fig:io_scope_development_iolibrary_streams}{1.0}
+    \ioSvgPlantumlFigure{io_scope_development_iolibrary_pipeline}{Development Slice: ioLibrary Pipeline and Legacy Files}{fig:io_scope_development_iolibrary_pipeline}{1.0}
 
-\section{Documentation Update \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Documentation Update}
-\label{Section::Documentation Update}
+    \subsection{Physical View}
+    The physical view shows the deployment and runtime environment around the oscilloscope system, including the FTDI DLL dependency and the relationship between the software process and its hardware context.
 
-The documentation was updated to match the current codebase and the current diagram set. The revised narrative now uses the implemented \texttt{io...} class names, identifies \texttt{ioOscilloscopeView} as the single abstract View boundary, documents the compact and detailed Qt views as the two selectable user interfaces, explains the live-session integration, and references the PlantUML 4+1 artifacts that correspond to the implemented design.
+    \ioSvgPlantumlFigure{io_scope_physical}{Physical View}{fig:io_scope_physical}{1.0}
 
-\section{Conclusion \\
-\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
-\index{Section!Conclusion}
-\label{Section::Conclusion}
+    \subsection{Scenario View}
+    The scenario view provides the ``+1'' use-case walkthrough for the 4+1 model by tracing the user flow from startup through selection, processing, and waveform rendering.
 
-The current oscilloscope architecture satisfies the assignment's main design goals while matching the implemented codebase and diagrams. The system preserves one abstract View boundary, provides two selectable Qt user interfaces, keeps scale and shift in the filter pipeline, isolates FTDI communication in the backend stream hierarchy, and uses a real multithreaded circular-buffer transfer path for acquisition and output.
+    \ioSvgPlantumlFigure{io_scope_scenario_sequence}{Scenario Sequence}{fig:io_scope_scenario_sequence}{1.0}
+
+
+    \section{Class Diagram \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Class Diagram}
+    \label{Section::Class Diagram}
+
+    The canonical class diagram for this assignment is now a split logical-class set so it remains readable in both slides and Overleaf. The material is shown as one overview plus focused readable slices for MVC structure, signal flow, FTDI streams, and the multithreaded transfer pipeline.
+
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_mvc}{Class diagram slice: Qt MVC structure and view-selection architecture}{fig:class_diagram_mvc}{0.98}
+
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_signal_flow}{Class diagram slice: signal processing, source selection, and live acquisition support}{fig:class_diagram_signal_flow}{0.98}
+
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_ftdi_streams}{Class diagram slice: FTDI stream hierarchy, session boundary, and adapter naming}{fig:class_diagram_ftdi_streams}{0.98}
+
+    \ioSvgPlantumlFigure{io_scope_logical_class_readable_transfer_pipeline}{Class diagram slice: multithreaded circular-buffer pipeline and legacy transfer path}{fig:class_diagram_transfer_pipeline}{0.98}
+
+    \section{AI Prompt and Generated Output \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!AI Prompt and Generated Output}
+    \label{Section::AI Prompt and Generated Output}
+
+    \subsection{Prompt Given to the AI Tool}
+    The AI tool was given a prompt requesting a Qt-based MVC redesign with one abstract View and two selectable concrete Qt user interfaces. The prompt required one-class-per-file organization, canonical \texttt{io<ClassName>} naming, preservation of the existing scale-and-shift pipe-and-filter design, preservation of the multithreaded circular-buffer FTDI transfer path, and use of the earlier \texttt{origin/oscilloscope} branch as historical source material rather than as the canonical final architecture.
+
+    \subsection{Generated Output Summary}
+    The generated output established the current Qt architecture direction by introducing the abstract View boundary, the two concrete Qt user interfaces, the Qt host window, and the supporting controller and model updates needed to preserve MVC behavior. Additional refinement was then performed to align naming, strengthen abstraction boundaries, preserve compatibility with the existing codebase, and integrate live FTDI or file-backed acquisition through the existing backend pipeline.
+
+    \section{Implementation Notes and Changes \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Implementation Notes and Changes}
+    \label{Section::Implementation Notes and Changes}
+
+    After the initial AI-generated implementation was produced, several revisions were made to align the final design with the assignment requirements and the evolving codebase. The Qt classes were made import-safe for environments where \texttt{PySide6} and \texttt{pyqtgraph} are unavailable, the controller was updated to fan out render state to both concrete views while tracking the active visible view, the live acquisition path was moved into \texttt{ioLiveOscilloscopeSession}, and the FTDI adapter surface was aligned with the \texttt{io<ClassName>} naming rule through canonical \texttt{ioFtdiDevice} naming plus preserved compatibility aliases.
+
+    \section{Proof of Functionality \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Proof of Functionality}
+    \label{Section::Proof of Functionality}
+
+    The execution of the program, including the file-to-file demonstration path and the walkthrough of how the controller code coordinates with the oscilloscope, is shown in the accompanying YouTube demo submitted with the report:
+
+    \begin{quote}
+    \url{https://youtu.be/hW8-CKr5dnA}
+    \end{quote}
+
+    \begin{itemize}
+        \item Switching between the compact and detailed Qt user interfaces.
+        \item Displaying waveform data in the active Qt user interface.
+        \item Applying scale and offset processing through the filter pipeline.
+        \item Reading from FTDI or file-backed sources through the live-session path.
+        \item Writing tee output to a file or FTDI sink through the multithreaded transfer pipeline.
+    \end{itemize}
+
+    \section{Conclusion \\
+    \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+    \index{Section!Conclusion}
+    \label{Section::Conclusion}
+
+    The current oscilloscope architecture satisfies the assignment's main design goals while matching the implemented codebase and diagrams. The system preserves one abstract View boundary, provides two selectable Qt user interfaces, keeps scale and shift in the filter pipeline, isolates FTDI communication in the backend stream hierarchy, and uses a real multithreaded circular-buffer transfer path for acquisition and output.

@@ -1,0 +1,91 @@
+@startuml
+title ioScope Development View - ioLibrary Pipeline and Legacy Files
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "ioLibrary/ Pipeline Files" {
+  [io_pipeline_config.py\nioPipelineConfig]
+  [io_acquisition_config.py\nioAcquisitionConfig]
+  [io_transfer_config.py\nioTransferConfig]
+  [data_buffer.py\nioDataBuffer]
+  [io_threaded_worker_base.py\nioThreadedWorkerBase]
+  [io_abstract_threaded_stream_worker.py\nioAbstractThreadedStreamWorker]
+  [io_recovery_manager.py\nioRecoveryManager]
+  [io_byte_count_monitor_base.py\nioByteCountMonitorBase]
+  [io_acquisition_monitor.py\nioAcquisitionMonitor]
+  [io_throughput_monitor.py\nioThroughputMonitor]
+  [io_rate_scheduler_base.py\nioRateSchedulerBase]
+  [io_input_scheduler.py\nioInputScheduler]
+  [io_output_scheduler.py\nioOutputScheduler]
+  [io_usb_read_controller.py\nioUsbReadController]
+  [io_usb_write_controller.py\nioUsbWriteController]
+  [io_pipeline_controller.py\nioPipelineController]
+}
+
+package "ioLibrary/ Legacy Compatibility Files" {
+  [buffer.py\nioBuffer]
+  [reader.py\nioRead]
+  [writer.py\nioWrite]
+  [_operation.py\nioBaseIoOperation]
+  [pipeline.py\nre-export]
+  [multithreaded_read.py\nre-export]
+  [multithreaded_write.py\nre-export]
+  [errors.py\nre-export]
+}
+
+package "Context Files" {
+  [io_pipeline_cli.py\nioPipelineCli]
+  [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+  [io_readable_byte_stream.py\nioReadableByteStream]
+  [io_writable_byte_stream.py\nioWritableByteStream]
+  [_ftdi_session.py\nioFtdiSession]
+}
+
+package "tests/" {
+  [test_multithreaded_read.py]
+  [test_multithreaded_write.py]
+}
+
+[io_pipeline_cli.py\nioPipelineCli] --> [io_pipeline_controller.py\nioPipelineController]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_pipeline_controller.py\nioPipelineController]
+
+[io_pipeline_controller.py\nioPipelineController] --> [io_pipeline_config.py\nioPipelineConfig]
+[io_pipeline_controller.py\nioPipelineController] --> [io_acquisition_config.py\nioAcquisitionConfig]
+[io_pipeline_controller.py\nioPipelineController] --> [io_transfer_config.py\nioTransferConfig]
+[io_pipeline_controller.py\nioPipelineController] --> [data_buffer.py\nioDataBuffer]
+[io_pipeline_controller.py\nioPipelineController] --> [io_acquisition_monitor.py\nioAcquisitionMonitor]
+[io_pipeline_controller.py\nioPipelineController] --> [io_throughput_monitor.py\nioThroughputMonitor]
+[io_pipeline_controller.py\nioPipelineController] --> [io_input_scheduler.py\nioInputScheduler]
+[io_pipeline_controller.py\nioPipelineController] --> [io_output_scheduler.py\nioOutputScheduler]
+[io_pipeline_controller.py\nioPipelineController] --> [io_recovery_manager.py\nioRecoveryManager]
+[io_pipeline_controller.py\nioPipelineController] --> [io_usb_read_controller.py\nioUsbReadController]
+[io_pipeline_controller.py\nioPipelineController] --> [io_usb_write_controller.py\nioUsbWriteController]
+[io_usb_read_controller.py\nioUsbReadController] --> [io_readable_byte_stream.py\nioReadableByteStream]
+[io_usb_write_controller.py\nioUsbWriteController] --> [io_writable_byte_stream.py\nioWritableByteStream]
+[io_usb_read_controller.py\nioUsbReadController] --> [data_buffer.py\nioDataBuffer]
+[io_usb_write_controller.py\nioUsbWriteController] --> [data_buffer.py\nioDataBuffer]
+[io_usb_read_controller.py\nioUsbReadController] --> [io_abstract_threaded_stream_worker.py\nioAbstractThreadedStreamWorker]
+[io_usb_write_controller.py\nioUsbWriteController] --> [io_abstract_threaded_stream_worker.py\nioAbstractThreadedStreamWorker]
+[io_abstract_threaded_stream_worker.py\nioAbstractThreadedStreamWorker] --> [io_threaded_worker_base.py\nioThreadedWorkerBase]
+[io_acquisition_monitor.py\nioAcquisitionMonitor] --> [io_byte_count_monitor_base.py\nioByteCountMonitorBase]
+[io_throughput_monitor.py\nioThroughputMonitor] --> [io_byte_count_monitor_base.py\nioByteCountMonitorBase]
+[io_input_scheduler.py\nioInputScheduler] --> [io_rate_scheduler_base.py\nioRateSchedulerBase]
+[io_output_scheduler.py\nioOutputScheduler] --> [io_rate_scheduler_base.py\nioRateSchedulerBase]
+
+[reader.py\nioRead] --> [buffer.py\nioBuffer]
+[writer.py\nioWrite] --> [buffer.py\nioBuffer]
+[reader.py\nioRead] --> [_ftdi_session.py\nioFtdiSession]
+[writer.py\nioWrite] --> [_ftdi_session.py\nioFtdiSession]
+[reader.py\nioRead] --> [_operation.py\nioBaseIoOperation]
+[writer.py\nioWrite] --> [_operation.py\nioBaseIoOperation]
+
+[test_multithreaded_read.py] --> [io_usb_read_controller.py\nioUsbReadController]
+[test_multithreaded_write.py] --> [io_usb_write_controller.py\nioUsbWriteController]
+
+note bottom of [io_pipeline_controller.py\nioPipelineController]
+This slice keeps the required producer-consumer
+pipeline and legacy compatibility files readable
+at document scale.
+end note
+@enduml

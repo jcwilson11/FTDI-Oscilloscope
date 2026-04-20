@@ -1,0 +1,78 @@
+@startuml
+title ioScope Logical Class View - Signal Flow and Live Acquisition Slice
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Qt MVC Context" {
+  class ioOscilloscopeController
+  class ioOscilloscopeModel
+}
+
+package "Live Session Support" {
+  class ioLiveOscilloscopeSession
+  class ioLiveSampleHistory
+  class ioTappedReadableByteStream
+  class ioLiveFileTailByteStream
+  class ioGeneratedWaveformByteStream
+  class ioNullWritableByteStream
+}
+
+package "Signal Processing" {
+  interface ioSignalFilter
+  abstract class ioSampleMappingFilterBase
+  class ioScaleFilter
+  class ioOffsetFilter
+  class ioFilterPipeline
+}
+
+package "Signal Sources" {
+  interface ioSignalSource
+  class ioGeneratedWaveformSource
+  class ioFileWaveformSource
+  class ioFtdiWaveformSource
+  class ioWaveformGenerator
+}
+
+package "Stream Context" {
+  interface ioReadableByteStream
+  interface ioWritableByteStream
+  class ioFtdiByteStream
+}
+
+package "Transfer Pipeline Context" {
+  class ioPipelineController
+}
+
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+
+ioLiveOscilloscopeSession --> ioLiveSampleHistory
+ioLiveOscilloscopeSession --> ioTappedReadableByteStream
+ioLiveOscilloscopeSession --> ioLiveFileTailByteStream
+ioLiveOscilloscopeSession --> ioGeneratedWaveformByteStream
+ioLiveOscilloscopeSession --> ioNullWritableByteStream
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioTappedReadableByteStream ..> ioReadableByteStream
+ioNullWritableByteStream ..> ioWritableByteStream
+
+ioSampleMappingFilterBase --|> ioSignalFilter
+ioScaleFilter --|> ioSampleMappingFilterBase
+ioOffsetFilter --|> ioSampleMappingFilterBase
+ioFilterPipeline ..> ioSignalFilter
+
+ioGeneratedWaveformSource ..|> ioSignalSource
+ioFileWaveformSource ..|> ioSignalSource
+ioFtdiWaveformSource ..|> ioSignalSource
+ioWaveformGenerator ..> ioSignalSource
+ioFtdiWaveformSource ..> ioFtdiByteStream
+
+note right of ioLiveOscilloscopeSession
+Live acquisition stays outside the View layer.
+The controller owns the session and the session
+owns the threaded transfer pipeline and history.
+end note
+@enduml

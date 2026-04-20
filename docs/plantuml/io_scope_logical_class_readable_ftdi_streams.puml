@@ -1,0 +1,83 @@
+@startuml
+title ioScope Logical Class View - FTDI Streams and Session Slice With Responsibilities
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+
+class ioLegacyFtdiCli {
+  +Preserves the older direct FTDI demo commands.
+}
+
+class ioLibraryError {
+  +Defines the base IO library runtime error.
+}
+class ioFtdiError {
+  +Defines FTDI-specific IO library failures.
+}
+interface ioStreamLifecycle {
+  +Defines stream open and close behavior.
+}
+interface ioReadableByteStream {
+  +Defines read-side byte stream behavior.
+}
+interface ioWritableByteStream {
+  +Defines write-side byte stream behavior.
+}
+abstract class ioAbstractReadableByteStream {
+  +Shares readable-stream validation and lifecycle.
+}
+abstract class ioAbstractWritableByteStream {
+  +Shares writable-stream validation and lifecycle.
+}
+abstract class ioAbstractSessionBackedByteStream {
+  +Shares FTDI-session-backed stream behavior.
+}
+abstract class ioAbstractFileBackedByteStream {
+  +Shares file-backed stream behavior.
+}
+class ioFtdiByteStream {
+  +Reads bytes from an FTDI device.
+}
+class ioFtdiOutputByteStream {
+  +Writes bytes to an FTDI device.
+}
+class ioFileInputByteStream {
+  +Reads bytes from a file.
+}
+class ioFileByteStream {
+  +Writes bytes to a file.
+}
+class ioFtdiSession {
+  +Owns the D2XX session boundary.
+}
+class ioFtdiDevice {
+  +Provides the FTDI device adapter over the session layer.
+}
+class FtdiDevice <<alias>> {
+  +Preserves the older adapter name as a compatibility alias.
+}
+
+ioLegacyFtdiCli --> ioFtdiDevice
+
+ioFtdiError --|> ioLibraryError
+ioReadableByteStream --|> ioStreamLifecycle
+ioWritableByteStream --|> ioStreamLifecycle
+ioAbstractReadableByteStream ..|> ioReadableByteStream
+ioAbstractWritableByteStream ..|> ioWritableByteStream
+ioFtdiByteStream --|> ioAbstractReadableByteStream
+ioFtdiOutputByteStream --|> ioAbstractWritableByteStream
+ioFileInputByteStream --|> ioAbstractReadableByteStream
+ioFileByteStream --|> ioAbstractWritableByteStream
+ioFtdiByteStream --|> ioAbstractSessionBackedByteStream
+ioFtdiOutputByteStream --|> ioAbstractSessionBackedByteStream
+ioFileInputByteStream --|> ioAbstractFileBackedByteStream
+ioFileByteStream --|> ioAbstractFileBackedByteStream
+ioAbstractSessionBackedByteStream --> ioFtdiSession
+ioFtdiDevice --|> ioFtdiSession
+FtdiDevice ..> ioFtdiDevice : compatibility alias
+
+note bottom of ioFtdiDevice
+The canonical submission path uses ioFtdiDevice.
+FtdiDevice remains only as a compatibility alias.
+end note
+@enduml

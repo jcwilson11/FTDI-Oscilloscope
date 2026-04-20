@@ -1,0 +1,57 @@
+@startuml
+title ioScope Logical Class View - FTDI Streams and Session Slice
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Bootstrap and CLI Context" {
+  class ioLegacyFtdiCli
+}
+
+package "FTDI Stream Hierarchy" {
+  class ioLibraryError
+  class ioFtdiError
+  interface ioStreamLifecycle
+  interface ioReadableByteStream
+  interface ioWritableByteStream
+  abstract class ioAbstractReadableByteStream
+  abstract class ioAbstractWritableByteStream
+  abstract class ioAbstractSessionBackedByteStream
+  abstract class ioAbstractFileBackedByteStream
+  class ioFtdiByteStream
+  class ioFtdiOutputByteStream
+  class ioFileInputByteStream
+  class ioFileByteStream
+  class ioFtdiSession
+}
+
+package "FTDI Adapter" {
+  class ioFtdiDevice
+  class FtdiDevice <<alias>>
+}
+
+ioLegacyFtdiCli --> ioFtdiDevice
+
+ioFtdiError --|> ioLibraryError
+ioReadableByteStream --|> ioStreamLifecycle
+ioWritableByteStream --|> ioStreamLifecycle
+ioAbstractReadableByteStream ..|> ioReadableByteStream
+ioAbstractWritableByteStream ..|> ioWritableByteStream
+ioFtdiByteStream --|> ioAbstractReadableByteStream
+ioFtdiOutputByteStream --|> ioAbstractWritableByteStream
+ioFileInputByteStream --|> ioAbstractReadableByteStream
+ioFileByteStream --|> ioAbstractWritableByteStream
+ioFtdiByteStream --|> ioAbstractSessionBackedByteStream
+ioFtdiOutputByteStream --|> ioAbstractSessionBackedByteStream
+ioFileInputByteStream --|> ioAbstractFileBackedByteStream
+ioFileByteStream --|> ioAbstractFileBackedByteStream
+ioAbstractSessionBackedByteStream --> ioFtdiSession
+ioFtdiDevice --|> ioFtdiSession
+FtdiDevice ..> ioFtdiDevice : compatibility alias
+
+note bottom of ioFtdiDevice
+Canonical FTDI adapter.
+The older FtdiDevice name remains as a thin
+compatibility alias only.
+end note
+@enduml

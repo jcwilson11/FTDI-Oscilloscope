@@ -1,0 +1,109 @@
+@startuml
+title ioScope Logical Class View - Qt MVC Slice With Responsibilities
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+
+class ioScopeShell {
+  +Runs the oscilloscope shell and persists runtime settings.
+}
+class ioFileComparator {
+  +Compares two files byte for byte.
+}
+
+class ioOscilloscopeController {
+  +Orchestrates UI actions, model updates, and rendering.
+}
+abstract class ioOscilloscopeView {
+  +Defines the single shared View contract for both UIs.
+}
+class ioCompactOscilloscopeView {
+  +Renders the compact Qt interface.
+}
+class ioDetailedOscilloscopeView {
+  +Renders the detailed Qt interface.
+}
+interface ioOscilloscopeWindow {
+  +Defines an optional window-host protocol outside the primary Qt path.
+}
+class ioQtScopeWindow {
+  +Hosts and switches the two Qt view instances without becoming a second View.
+}
+class ioTkOscilloscopeWindow <<legacy>> {
+  +Preserves the older Tk shell window outside the primary Qt path.
+}
+class ioOscilloscopeModel {
+  +Stores raw samples, processed samples, and UI state.
+}
+class ioControlState {
+  +Stores timing, source, FTDI, scale, and offset settings.
+}
+class ioViewportState {
+  +Stores the visible sample window position and size.
+}
+class ioRenderState {
+  +Carries immutable render data into the View layer.
+}
+class ioScopeSettingsStore {
+  +Persists and reloads settings.
+}
+
+class ioFilterPipeline {
+  +Runs filters in deterministic order.
+}
+class ioWaveformGenerator {
+  +Selects the active signal source.
+}
+
+abstract class ioViewTheme {
+  +Defines the theme contract for a View.
+}
+abstract class ioStaticThemeBase {
+  +Shares static theme metadata behavior.
+}
+class ioPortraitTheme {
+  +Provides the portrait color palette.
+}
+class ioLandscapeTheme {
+  +Provides the landscape color palette.
+}
+
+class ioLiveOscilloscopeSession {
+  +Owns the live acquisition session and tee-output pipeline.
+}
+
+ioScopeShell --> ioOscilloscopeController
+ioScopeShell --> ioScopeSettingsStore
+
+ioCompactOscilloscopeView --|> ioOscilloscopeView
+ioDetailedOscilloscopeView --|> ioOscilloscopeView
+ioTkOscilloscopeWindow ..> ioOscilloscopeWindow
+ioQtScopeWindow --> ioCompactOscilloscopeView
+ioQtScopeWindow --> ioDetailedOscilloscopeView
+ioQtScopeWindow --> ioOscilloscopeController
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioOscilloscopeView
+ioOscilloscopeController --> ioRenderState
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioControlState
+ioOscilloscopeModel --> ioViewportState
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+ioOscilloscopeView --> ioViewTheme
+
+ioPortraitTheme --|> ioStaticThemeBase
+ioLandscapeTheme --|> ioStaticThemeBase
+ioStaticThemeBase --|> ioViewTheme
+
+note right of ioOscilloscopeView
+Grading constraint:
+the View abstraction appears once.
+The two selectable Qt UIs are concrete subclasses.
+end note
+
+note right of ioQtScopeWindow
+This class is a host shell.
+It owns visibility and high-level UI selection.
+It does not replace the View abstraction.
+end note
+@enduml

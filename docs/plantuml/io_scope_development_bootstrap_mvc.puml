@@ -1,0 +1,100 @@
+@startuml
+title ioScope Development View - Bootstrap and MVC Files
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Bootstrap / CLI Files" {
+  [controller.py]
+  [io_scope_qt.py\nQt launcher]
+  [io_scope_shell.py\nioScopeShell]
+  [io_pipeline_cli.py\nioPipelineCli]
+  [io_legacy_ftdi_cli.py\nioLegacyFtdiCli]
+  [io_file_comparator.py\nioFileComparator]
+  [ftd2xx_wrapper.py\nioFtdiDevice]
+}
+
+package "oscilloscope/ MVC Files" {
+  [io_oscilloscope_controller.py\nioOscilloscopeController]
+  [io_oscilloscope_model.py\nioOscilloscopeModel]
+  [io_oscilloscope_view.py\nioOscilloscopeView]
+  [io_compact_oscilloscope_view.py\nioCompactOscilloscopeView]
+  [io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView]
+  [io_qt_scope_window.py\nioQtScopeWindow]
+  [io_oscilloscope_window.py\nioOscilloscopeWindow]
+}
+
+package "oscilloscope/ State Files" {
+  [io_control_state.py\nioControlState]
+  [io_viewport_state.py\nioViewportState]
+  [io_render_state.py\nioRenderState]
+  [io_scope_settings_store.py\nioScopeSettingsStore]
+}
+
+package "oscilloscope/ Compatibility Files" {
+  [_qt_compat.py\nQt import shim]
+  [controller.py\nre-export]
+  [model.py\nre-export]
+  [view.py\nre-export]
+  [filters.py\nre-export]
+  [io_tk_oscilloscope_window.py\nioTkOscilloscopeWindow]
+}
+
+package "oscilloscope/ Context Files" {
+  [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+  [io_filter_pipeline.py\nioFilterPipeline]
+  [io_waveform_generator.py\nioWaveformGenerator]
+}
+
+package "tests/" {
+  [test_oscilloscope.py]
+  [test_scope_qt.py]
+  [test_scope_shell.py]
+}
+
+[controller.py] --> [io_scope_qt.py]
+[controller.py] --> [io_scope_shell.py]
+[controller.py] --> [io_pipeline_cli.py]
+[controller.py] --> [io_legacy_ftdi_cli.py]
+[controller.py] --> [io_file_comparator.py]
+[io_scope_qt.py\nQt launcher] --> [io_qt_scope_window.py\nioQtScopeWindow]
+[io_scope_qt.py\nQt launcher] --> [io_oscilloscope_controller.py\nioOscilloscopeController]
+[io_scope_shell.py\nioScopeShell] --> [io_oscilloscope_controller.py\nioOscilloscopeController]
+[io_scope_shell.py\nioScopeShell] --> [io_scope_settings_store.py\nioScopeSettingsStore]
+[io_legacy_ftdi_cli.py\nioLegacyFtdiCli] --> [ftd2xx_wrapper.py\nioFtdiDevice]
+
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_oscilloscope_model.py\nioOscilloscopeModel]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_oscilloscope_view.py\nioOscilloscopeView]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_compact_oscilloscope_view.py\nioCompactOscilloscopeView]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+[io_compact_oscilloscope_view.py\nioCompactOscilloscopeView] --> [io_oscilloscope_view.py\nioOscilloscopeView]
+[io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView] --> [io_oscilloscope_view.py\nioOscilloscopeView]
+[io_qt_scope_window.py\nioQtScopeWindow] --> [io_compact_oscilloscope_view.py\nioCompactOscilloscopeView]
+[io_qt_scope_window.py\nioQtScopeWindow] --> [io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_control_state.py\nioControlState]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_viewport_state.py\nioViewportState]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_filter_pipeline.py\nioFilterPipeline]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_waveform_generator.py\nioWaveformGenerator]
+
+[test_oscilloscope.py] --> [io_oscilloscope_controller.py\nioOscilloscopeController]
+[test_scope_qt.py] --> [io_scope_qt.py\nQt launcher]
+[test_scope_shell.py] --> [io_scope_shell.py\nioScopeShell]
+
+note bottom of [view.py\nre-export]
+Compatibility re-export only.
+The primary view abstraction lives in
+io_oscilloscope_view.py.
+It should not be graded as the View design itself.
+end note
+
+note bottom of [io_tk_oscilloscope_window.py\nioTkOscilloscopeWindow]
+Retained for legacy compatibility.
+It is not part of the primary Qt path.
+end note
+
+note bottom of [ftd2xx_wrapper.py\nioFtdiDevice]
+Canonical adapter name follows the io<ClassName> rule.
+The older FtdiDevice import remains as a thin alias.
+end note
+@enduml

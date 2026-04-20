@@ -1,0 +1,122 @@
+@startuml
+title ioScope Logical Class View - Multithreaded Transfer Pipeline Slice With Responsibilities
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+
+class ioPipelineCli {
+  +Builds and runs the transfer pipeline from CLI arguments.
+}
+class ioFileComparator {
+  +Compares two files byte for byte.
+}
+class ioLiveOscilloscopeSession {
+  +Delegates live transfer work into the pipeline controller.
+}
+interface ioReadableByteStream {
+  +Defines read-side byte stream behavior.
+}
+interface ioWritableByteStream {
+  +Defines write-side byte stream behavior.
+}
+class ioFtdiSession {
+  +Owns the D2XX session boundary.
+}
+
+class ioPipelineConfig {
+  +Stores end-to-end pipeline settings.
+}
+class ioAcquisitionConfig {
+  +Stores read worker settings.
+}
+class ioTransferConfig {
+  +Stores write worker settings.
+}
+class ioPipelineController {
+  +Builds and coordinates the transfer pipeline.
+}
+class ioDataBuffer {
+  +Implements the one shared thread-safe circular buffer used by the required transfer path.
+}
+abstract class ioByteCountMonitorBase {
+  +Shares byte counting and throughput timing behavior.
+}
+abstract class ioThreadedWorkerBase {
+  +Shares worker thread lifecycle behavior.
+}
+abstract class ioAbstractThreadedStreamWorker {
+  +Shares threaded stream worker behavior.
+}
+class ioUsbReadController {
+  +Pushes bytes from a stream into the buffer.
+}
+class ioUsbWriteController {
+  +Drains bytes from the buffer into a stream.
+}
+class ioRecoveryManager {
+  +Coordinates safe-stop recovery behavior.
+}
+class ioAcquisitionMonitor {
+  +Tracks read counts and throughput.
+}
+class ioThroughputMonitor {
+  +Tracks write counts and throughput.
+}
+abstract class ioRateSchedulerBase {
+  +Shares rate scheduling behavior.
+}
+class ioInputScheduler {
+  +Schedules read-side timing.
+}
+class ioOutputScheduler {
+  +Schedules write-side timing.
+}
+
+class ioBuffer <<legacy>> {
+  +Preserves the older fixed-size buffer abstraction.
+}
+abstract class ioBaseIoOperation <<legacy>> {
+  +Shares the older timed FTDI operation behavior.
+}
+class ioRead <<legacy>> {
+  +Reads bytes into the older legacy buffer.
+}
+class ioWrite <<legacy>> {
+  +Writes bytes out from the older legacy buffer.
+}
+
+ioPipelineCli --> ioPipelineController
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioPipelineController --> ioPipelineConfig
+ioPipelineController --> ioDataBuffer
+ioPipelineController --> ioUsbReadController
+ioPipelineController --> ioUsbWriteController
+ioUsbReadController --|> ioAbstractThreadedStreamWorker
+ioUsbWriteController --|> ioAbstractThreadedStreamWorker
+ioAbstractThreadedStreamWorker --|> ioThreadedWorkerBase
+ioUsbReadController --> ioAcquisitionConfig
+ioUsbWriteController --> ioTransferConfig
+ioUsbReadController --> ioReadableByteStream
+ioUsbWriteController --> ioWritableByteStream
+ioAcquisitionMonitor --|> ioByteCountMonitorBase
+ioThroughputMonitor --|> ioByteCountMonitorBase
+ioUsbReadController --> ioAcquisitionMonitor
+ioUsbWriteController --> ioThroughputMonitor
+ioUsbReadController --> ioInputScheduler
+ioUsbWriteController --> ioOutputScheduler
+ioUsbReadController --> ioRecoveryManager
+ioUsbWriteController --> ioRecoveryManager
+ioInputScheduler --|> ioRateSchedulerBase
+ioOutputScheduler --|> ioRateSchedulerBase
+
+ioRead --|> ioBaseIoOperation
+ioWrite --|> ioBaseIoOperation
+ioBaseIoOperation --> ioBuffer
+ioBaseIoOperation ..> ioFtdiSession
+
+note bottom of ioDataBuffer
+Current branch ships the required one-buffer design.
+The extra-credit dual-buffer design is future work.
+end note
+@enduml

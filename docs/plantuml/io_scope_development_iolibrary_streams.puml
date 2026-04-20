@@ -1,0 +1,52 @@
+@startuml
+title ioScope Development View - ioLibrary Stream Files
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "ioLibrary/ Stream Files" {
+  [io_library_error.py\nioLibraryError]
+  [io_ftdi_error.py\nioFtdiError]
+  [io_stream_lifecycle.py\nioStreamLifecycle]
+  [io_readable_byte_stream.py\nioReadableByteStream]
+  [io_writable_byte_stream.py\nioWritableByteStream]
+  [io_abstract_readable_byte_stream.py\nioAbstractReadableByteStream]
+  [io_abstract_writable_byte_stream.py\nioAbstractWritableByteStream]
+  [io_abstract_session_backed_byte_stream.py\nioAbstractSessionBackedByteStream]
+  [io_abstract_file_backed_byte_stream.py\nioAbstractFileBackedByteStream]
+  [_ftdi_session.py\nioFtdiSession]
+  [io_ftdi_byte_stream.py\nioFtdiByteStream]
+  [io_ftdi_output_byte_stream.py\nioFtdiOutputByteStream]
+  [io_file_input_byte_stream.py\nioFileInputByteStream]
+  [io_file_byte_stream.py\nioFileByteStream]
+}
+
+package "Context Files" {
+  [ftd2xx_wrapper.py\nioFtdiDevice]
+  [io_ftdi_waveform_source.py\nioFtdiWaveformSource]
+  [io_usb_read_controller.py\nioUsbReadController]
+  [io_usb_write_controller.py\nioUsbWriteController]
+}
+
+[io_ftdi_error.py\nioFtdiError] --> [io_library_error.py\nioLibraryError]
+[io_readable_byte_stream.py\nioReadableByteStream] --> [io_stream_lifecycle.py\nioStreamLifecycle]
+[io_writable_byte_stream.py\nioWritableByteStream] --> [io_stream_lifecycle.py\nioStreamLifecycle]
+[io_abstract_readable_byte_stream.py\nioAbstractReadableByteStream] --> [io_readable_byte_stream.py\nioReadableByteStream]
+[io_abstract_writable_byte_stream.py\nioAbstractWritableByteStream] --> [io_writable_byte_stream.py\nioWritableByteStream]
+[io_abstract_session_backed_byte_stream.py\nioAbstractSessionBackedByteStream] --> [_ftdi_session.py\nioFtdiSession]
+[io_abstract_file_backed_byte_stream.py\nioAbstractFileBackedByteStream] --> [io_readable_byte_stream.py\nioReadableByteStream]
+[io_abstract_file_backed_byte_stream.py\nioAbstractFileBackedByteStream] --> [io_writable_byte_stream.py\nioWritableByteStream]
+[io_ftdi_byte_stream.py\nioFtdiByteStream] --> [io_abstract_readable_byte_stream.py\nioAbstractReadableByteStream]
+[io_ftdi_byte_stream.py\nioFtdiByteStream] --> [io_abstract_session_backed_byte_stream.py\nioAbstractSessionBackedByteStream]
+[io_ftdi_output_byte_stream.py\nioFtdiOutputByteStream] --> [io_abstract_writable_byte_stream.py\nioAbstractWritableByteStream]
+[io_ftdi_output_byte_stream.py\nioFtdiOutputByteStream] --> [io_abstract_session_backed_byte_stream.py\nioAbstractSessionBackedByteStream]
+[io_file_input_byte_stream.py\nioFileInputByteStream] --> [io_abstract_readable_byte_stream.py\nioAbstractReadableByteStream]
+[io_file_input_byte_stream.py\nioFileInputByteStream] --> [io_abstract_file_backed_byte_stream.py\nioAbstractFileBackedByteStream]
+[io_file_byte_stream.py\nioFileByteStream] --> [io_abstract_writable_byte_stream.py\nioAbstractWritableByteStream]
+[io_file_byte_stream.py\nioFileByteStream] --> [io_abstract_file_backed_byte_stream.py\nioAbstractFileBackedByteStream]
+
+[ftd2xx_wrapper.py\nioFtdiDevice] --> [_ftdi_session.py\nioFtdiSession]
+[io_ftdi_waveform_source.py\nioFtdiWaveformSource] --> [io_ftdi_byte_stream.py\nioFtdiByteStream]
+[io_usb_read_controller.py\nioUsbReadController] --> [io_readable_byte_stream.py\nioReadableByteStream]
+[io_usb_write_controller.py\nioUsbWriteController] --> [io_writable_byte_stream.py\nioWritableByteStream]
+@enduml

@@ -1,0 +1,85 @@
+@startuml
+title ioScope Logical Class View - Multithreaded Transfer Pipeline Slice
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Bootstrap and CLI" {
+  class ioPipelineCli
+  class ioFileComparator
+}
+
+package "Live Session Context" {
+  class ioLiveOscilloscopeSession
+}
+
+package "Stream Context" {
+  interface ioReadableByteStream
+  interface ioWritableByteStream
+  class ioFtdiSession
+}
+
+package "Multithreaded Pipeline" {
+  class ioPipelineConfig
+  class ioAcquisitionConfig
+  class ioTransferConfig
+  class ioPipelineController
+  class ioDataBuffer
+  abstract class ioByteCountMonitorBase
+  abstract class ioThreadedWorkerBase
+  abstract class ioAbstractThreadedStreamWorker
+  class ioUsbReadController
+  class ioUsbWriteController
+  class ioRecoveryManager
+  class ioAcquisitionMonitor
+  class ioThroughputMonitor
+  abstract class ioRateSchedulerBase
+  class ioInputScheduler
+  class ioOutputScheduler
+}
+
+package "Legacy Operations" {
+  class ioBuffer <<legacy>>
+  abstract class ioBaseIoOperation <<legacy>>
+  class ioRead <<legacy>>
+  class ioWrite <<legacy>>
+}
+
+ioPipelineCli --> ioPipelineController
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioPipelineController --> ioPipelineConfig
+ioPipelineController --> ioDataBuffer
+ioPipelineController --> ioUsbReadController
+ioPipelineController --> ioUsbWriteController
+ioUsbReadController --|> ioAbstractThreadedStreamWorker
+ioUsbWriteController --|> ioAbstractThreadedStreamWorker
+ioAbstractThreadedStreamWorker --|> ioThreadedWorkerBase
+ioUsbReadController --> ioAcquisitionConfig
+ioUsbWriteController --> ioTransferConfig
+ioUsbReadController --> ioReadableByteStream
+ioUsbWriteController --> ioWritableByteStream
+ioAcquisitionMonitor --|> ioByteCountMonitorBase
+ioThroughputMonitor --|> ioByteCountMonitorBase
+ioUsbReadController --> ioAcquisitionMonitor
+ioUsbWriteController --> ioThroughputMonitor
+ioUsbReadController --> ioInputScheduler
+ioUsbWriteController --> ioOutputScheduler
+ioUsbReadController --> ioRecoveryManager
+ioUsbWriteController --> ioRecoveryManager
+ioInputScheduler --|> ioRateSchedulerBase
+ioOutputScheduler --|> ioRateSchedulerBase
+
+ioRead --|> ioBaseIoOperation
+ioWrite --|> ioBaseIoOperation
+ioBaseIoOperation --> ioBuffer
+ioBaseIoOperation ..> ioFtdiSession
+
+note bottom of ioDataBuffer
+Current required implementation:
+one bounded thread-safe circular buffer shared by
+the read worker and the write worker.
+The separate two-buffer extra-credit design is
+not implemented in this branch.
+end note
+@enduml

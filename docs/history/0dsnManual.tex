@@ -1,0 +1,514 @@
+% Initial version by Darian Muresan, Ph.D.
+% dmuresan@stevens.edu
+% Edit and adjust as needed.
+\documentclass[12pt]{cornell}
+
+% add index support
+%\usepackage{imakeidx}
+\usepackage{makeidx}
+\usepackage{tikz}
+\usepackage{forest}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{booktabs}
+%\makeindex
+% added to use svg image format
+\usepackage[inkscapelatex=false]{svg}
+\usepackage{graphicx}
+\usepackage{pdflscape} 
+% graphing programs
+\usepackage{color}
+\usepackage{psfrag}
+\usepackage{verbatim}
+\usepackage{fancyhdr}
+%\usepackage{titlesec}
+\usepackage{fancyvrb} 
+% hyperlink programs
+%\usepackage{url}
+
+% Does not work with LaTeX=>PDF
+\usepackage[pdfmark, 
+breaklinks=true, 
+colorlinks=true,
+citecolor=blue,
+linkcolor=blue,
+menucolor=black,
+pagecolor=black,
+urlcolor=blue
+]{hyperref} % links in pdf
+
+%\usepackage[colorlinks]{hyperref} % links in dvi
+\usepackage{float}
+\usepackage{listings}
+\usepackage{amsfonts} 
+\usepackage{amssymb} 
+%\usepackage{tabto}
+
+\usepackage{tabularx,colortbl}
+\usepackage[chapter]{algorithm} 
+\usepackage{algorithmic} 
+\usepackage{blindtext}
+
+\definecolor{DarkGreen}{rgb}{0,0.6,0}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{mygray}{rgb}{0.5,0.5,0.5}
+\definecolor{mymauve}{rgb}{0.58,0,0.82}
+
+\usepackage{tocloft}
+\usepackage{amsmath}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+\usepackage{longtable}
+%\usepackage{textcomp}
+\usepackage{txfonts}
+\usepackage{pstool}
+
+% added by Joris Wilson for images
+\usepackage{wrapfig}
+\usepackage{graphicx}
+
+%part for \part titles
+%chap for \chapter titles
+%sec for \section titles
+%subsec for \subsection titles
+%subsubsec for \subsubsection titles
+%para for \paragraph titles
+%subpara for \subparagraph titles
+%fig for figure \caption titles
+%subfig for subfigure \caption titles
+%tab for table \caption titles
+%subtab for subtable \caption titles
+
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{caption}
+\captionsetup[longtable]{justification=centering}
+
+\usepackage{titlesec}
+
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries}
+  {\chaptername\ \thechapter}
+  {10pt}
+  {\Huge}
+
+\titlespacing*{\chapter}
+  {0pt}{-30pt}{20pt}
+
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    stringstyle=\color{green!50!black},
+    commentstyle=\color{gray},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    frame=single,
+    breaklines=true,
+    tabsize=2,
+    showstringspaces=false
+}
+
+
+% update chapter number spacing
+\setlength{\cftchapnumwidth}{2em}
+\setlength{\cftsecnumwidth}{2.5em}
+\setlength{\cftsubsecnumwidth}{3.5em}
+\setlength{\cftsubsubsecnumwidth}{4.5em}
+
+\addtolength{\cftsecindent}{0.5em}
+\addtolength{\cftsubsecindent}{0.5em}
+\addtolength{\cftsubsubsecindent}{0.5em}
+
+%\titlespacing*{\chapter}{0pt}{-50pt}{20pt}
+%\titleformat{\chapter}[display]{\normalfont\huge\bfseries}{\chaptertitlename\ 
+%\thechapter}{20pt}{\Huge}
+%\pagestyle{fancy}
+%\pagestyle{cornell}
+%
+%\rhead{F054-021-0172}
+%\chead{Nonlinear Enhancement of Visual Target Detection (AF05-T021)}
+%\lhead{GSTI}
+%\lfoot{\scriptsize Use or disclosure of data on this page is subject
+%to the restriction on the title page of this proposal.}
+%\cfoot{}
+%\rfoot{\thepage}
+
+\newfont{\Bp}{msbm10}
+\newfont{\BpBig}{msbm10 scaled\magstep2}
+\newfont{\Sc}{eusm10}
+\newfont{\ScBig}{eusm10 scaled\magstep3}
+\newfont{\Fr}{eufm10}
+\newfont{\FrBig}{eufm10 scaled\magstep1}
+
+% some commands:
+\newcommand{\dxi}{{\tt m\_xDeltaInput}}
+\newcommand{\dyi}{{\tt m\_yDeltaInput}}
+\newcommand{\dci}{{\tt m\_cDeltaInput}}
+\newcommand{\dxo}{{\tt m\_xDeltaOutput}}
+\newcommand{\dyo}{{\tt m\_yDeltaOutput}}
+\newcommand{\dco}{{\tt m\_cDeltaOutput}}
+\newcommand{\ttf}[1]{{\tt #1}}
+\newcommand{\tbl}[2]{{\begin{tabular}{c} #1 \\ #2 \end{tabular}}}
+
+\newcommand{\urltwo}[2]{\mbox{\href{#1}{\tt #2}}}
+\newcommand{\qnorm}[1]{\|#1\|_{\bQ}}
+\newcommand{\qdot}[2]{\lrb #1, #2 \rrb_{\bQ}}
+\newcommand{\kdot}[2]{\lrb #1, #2 \rrb_{\bf k}}
+\newcommand{\tdot}[2]{\lrb #1, #2 \rrb}
+\newcommand{\mydiff}[2]{\lrb #1 - #2 \rrb}
+\newcommand{\lena}{\textit{lena}}
+\newcommand{\barb}{\textit{barbara}}
+\newcommand{\boat}{\textit{boat}}
+\newcommand{\leaves}{\textit{leaves}}
+\newcommand{\rings}{\textit{rings}}
+\newcommand{\treg}{\textit{train region}}
+\newcommand{\dreg}{\textit{denoise region}}
+\newcommand{\oreg}{\textit{overlap region}}
+\newcommand{\sil}{\sigma_l^2}
+\newcommand{\sn}{\sigma^2}
+\newcommand{\bn}{{\mbox{\bf \FrBig N}}}
+\newcommand{\n}{\mbox{\Fr N}}
+%\newcommand{\bn}{\bf N}
+%\newcommand{\n}{N}
+\newcommand{\bY}{\textbf{Y}}
+\newcommand{\bX}{\textbf{X}}
+\newcommand{\bb}{\textbf{b}}
+\newcommand{\bu}{\textbf{u}}
+\newcommand{\bv}{\textbf{v}}
+\newcommand{\by}{\textbf{y}}
+\newcommand{\bx}{\textbf{x}}
+\newcommand{\be}{\textbf{e}}
+\newcommand{\bz}{\textbf{z}}
+\newcommand{\bs}{\textbf{s}}
+\newcommand{\bw}{\textbf{w}}
+\newcommand{\bQ}{\textbf{Q}}
+\newcommand{\bphi}{\textbf{$\phi$}}
+\newcommand{\lsb}{\left[}
+\newcommand{\rsb}{\right]}
+\newcommand{\lrb}{\left(}
+\newcommand{\rrb}{\right)}
+\newcommand{\lcb}{\left\{}
+\newcommand{\rcb}{\right\}}
+\newcommand{\R}{\mbox{\BpBig R}}
+\newcommand{\F}{{\cal F}}
+\newcommand{\Fk}{\mbox{\Sc F}}
+\newcommand{\bQF}{\textbf{Q}_{\mbox{\Sc F}}}
+\newcommand{\N}{{\cal N}}
+\newcommand{\xlz}{X_l(z)}
+\newcommand{\xhz}{X_h(z)}
+\newcommand{\xz}{X(z)}
+\newcommand{\pr}{ perfect reconstruction }
+\newcommand{\smb}{Smith-Barnwell }
+\newcommand{\xw}{X(e^{j\omega})}
+\newcommand{\xmw}{X(-e^{j\omega})}
+\newcommand{\dw}{D(e^{j\omega})}
+\newcommand{\dmw}{D(-e^{j\omega})}
+\newcommand{\ew}{E(e^{j\omega})}
+\newcommand{\emw}{E(-e^{j\omega})}
+\newcommand{\fw}{F_0(e^{j\omega})}
+\newcommand{\fmw}{F_0(-e^{j\omega})}
+\newcommand{\hoz}{H_1(z)}
+\newcommand{\hzz}{H_0(z)}
+\newcommand{\goz}{G_1(z)}
+\newcommand{\gzz}{G_0(z)}
+\newcommand{\hzw}{H_{0}(e^{j\omega})}
+\newcommand{\hzmw}{H_{0}(-e^{j\omega})}
+\newcommand{\hzcw}{H_{0}(e^{-j\omega})}
+\newcommand{\how}{H_1(e^{j\omega})}
+\newcommand{\homw}{H_1(-e^{j\omega})}
+\newcommand{\gzw}{G_0(e^{j\omega})}
+\newcommand{\gzmw}{G_0(-e^{j\omega})}
+\newcommand{\gow}{G_1(e^{j\omega})}
+\newcommand{\gomw}{G_1(-e^{j\omega})}
+\newcommand{\wl}{e^{-jwL}}
+\newcommand{\aqua}{\textit{AQua with OR }}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\newtheorem{claim}{Claim}
+\newtheorem{definition}{Definition}
+\newenvironment{proof}{\noindent{\em Proof.}}{\ \hfill Q.E.D.}
+%\newtheorem{moduleCount}{L}
+\newcommand*{\labelfile}[1]{%
+  \label{file:#1}%
+}
+
+% Use this to label requirements, use cases, user stories, etc.
+% This is where we can add different spellings for different types of 
+% requirements, use cases, user stories, etc.
+% \newtheorem{requirementKind}{Requirement Spelling}
+\newtheorem{reqkFunctional}{Functional Requirement}
+\newtheorem{reqkQuality}{Quality Requirement}
+\newtheorem{reqkConstraint}{Constraint Requirement}
+\newtheorem{reqkInterface}{Interface Requirement}
+\newtheorem{reqkBusiness}{Business Requirement}
+% Use cases
+\newtheorem{useCase}{Use Case}
+% User story
+\newtheorem{userStory}{User Story}
+
+% command for adding a version to the document
+\newcommand{\VERSION}{Version 0.0.0}
+
+% Family -- enter the name of the family that it belongs to: Chapter, Figure, Table, etc.
+% Name -- name of the family member: file name, table name, etc.
+\newcommand{\FamilyName}[2]{\hyperref[#1::#2]{#2}\index{#2}\xspace}
+% Family -- same as above
+% Name -- same as above
+% Reference -- shorthand for the 'Name'.  It will show as Reference_NameID
+% Kind -- underscore(_), space, or dash (-)
+\newcommand{\FamilyNameReferenceKind}[4]{\hyperref[#1::#2]{$#3#4{\ref*{#1::#2}}$}}
+% newcommand{Family,Label}
+\newcommand{\FamilyLabel}[2]{\label{#1::#2}}
+
+
+% for use cases
+\newcommand{\UseCaseLabel}[1]{\FamilyLabel{UseCase}{#1}}
+\newcommand{\UseCaseName}[1]{\FamilyName{UseCase}{#1}}
+\newcommand{\UseCaseReference}[1]{\FamilyNameReferenceKind{UseCase}{#1}{UC}{_}}
+% UseCase name with stacked reference
+\newcommand{\UseCaseNameWSReference}[1]{\begin{tabular}{c}\UseCaseName{#1} \\ (\UseCaseReference{#1}) \end{tabular}}
+% UseCase name with inline reference
+\newcommand{\UseCaseNameWIReference}[1]{\UseCaseName{#1} (\UseCaseReference{#1})}
+
+% for chapters
+\newcommand{\ChapterName}[1]{\FamilyName{Chapter}{#1}}
+\newcommand{\ChapterLabel}[1]{\FamilyLabel{Chapter}{#1}}
+\newcommand{\ChapterReference}[1]{\FamilyNameReferenceKind{Chapter}{#1}{Chapter}{\mbox{ }}}
+% Chapter name with inline (WI) reference 
+\newcommand{\ChapterNameWIReference}[1]{\ChapterName{#1} (\ChapterReference{#1})}
+
+% for figures
+\newcommand{\FigureName}[1]{\FamilyName{Figure}{#1}}
+\newcommand{\FigureLabel}[1]{\FamilyLabel{Figure}{#1}}
+\newcommand{\FigureReference}[1]{\FamilyNameReferenceKind{Figure}{#1}{Figure}{\mbox{ }}}
+% Figure name with stacked (WS) reference
+\newcommand{\FigureNameWSReference}[1]{\begin{tabular}{c}\FigureName{#1} \\ (\FigureReference{#1}) \end{tabular}}
+% Figure name with inline (WI) reference 
+\newcommand{\FigureNameWIReference}[1]{\FigureName{#1} (\FigureReference{#1})}
+
+% for tables
+\newcommand{\TableName}[1]{\FamilyName{Table}{#1}}
+\newcommand{\TableLabel}[1]{\FamilyLabel{Table}{#1}}
+\newcommand{\TableReference}[1]{\FamilyNameReferenceKind{Table}{#1}{Table}{\mbox{ }}}
+
+% for requirements
+% RequirementLabel[Kind][Label]
+\newcommand{\RequirementLabel}[2]{\FamilyLabel{#1}{#2}}
+\newcommand{\RequirementName}[2]{\FamilyName{#1}{#2}}
+\newcommand{\RequirementReference}[2]{\FamilyNameReferenceKind{#1}{#2}{#1}{_}}
+% Requirements name with stacked (WS) reference
+\newcommand{\RequirementNameWSReference}[2]{\begin{tabular}{c}\RequirementName{#1}{#2} \\ (\RequirementReference{#1}{#2}) \end{tabular}}
+% Requirements name with inline (WI) reference 
+\newcommand{\RequirementNameWIReference}[2]{\RequirementName{#1}{#1} (\RequirementReference{#1}{#2})}
+
+% for requirements
+% RequirementLabel[Kind][Label]
+\newcommand{\UserStoryLabel}[2]{\FamilyLabel{#1}{#2}}
+\newcommand{\UserStoryName}[2]{\FamilyName{#1}{#2}}
+\newcommand{\UserStoryReference}[2]{\FamilyNameReferenceKind{#1}{#2}{R}{_}}
+% Requirements name with stacked (WS) reference
+\newcommand{\UserStoryNameWSReference}[2]{\begin{tabular}{c}\RequirementName{#1}{#2} \\ (\RequirementReference{#1}{#2}) \end{tabular}}
+% Requirements name with inline (WI) reference 
+\newcommand{\UserStoryNameWIReference}[2]{\RequirementName{#1}{#1} (\RequirementReference{#1}{#2})}
+
+% for python
+\usepackage{minted}
+
+\lstset{ %
+  backgroundcolor=\color{white},   % choose the background color; you must add \usepackage{color} or \usepackage{xcolor}
+  basicstyle=\footnotesize,        % the size of the fonts that are used for the code
+  breakatwhitespace=false,         % sets if automatic breaks should only happen at whitespace
+  breaklines=true,                 % sets automatic line breaking
+  captionpos=b,                    % sets the caption-position to bottom
+  commentstyle=\color{DarkGreen},    % comment style
+  deletekeywords={...},            % if you want to delete keywords from the given language
+  escapeinside={\%*}{*)},          % if you want to add LaTeX within your code
+  extendedchars=true,              % lets you use non-ASCII characters; for 8-bits encodings only, does not work with UTF-8
+  %frame=single,                   % adds a frame around the code
+  keepspaces=true,                 % keeps spaces in text, useful for keeping indentation of code (possibly needs columns=flexible)
+  keywordstyle=\color{blue},       % keyword style
+  language=C++,                    % the language of the code
+  morekeywords={*,...},            % if you want to add more keywords to the set
+  numbers=left,                    % where to put the line-numbers; possible values are (none, left, right)
+  numbersep=5pt,                   % how far the line-numbers are from the code
+  numberstyle=\tiny\color{mygray}, % the style that is used for the line-numbers
+  rulecolor=\color{black},         % if not set, the frame-color may be changed on line-breaks within not-black text (e.g. comments (green here))
+  showspaces=false,                % show spaces everywhere adding particular underscores; it overrides 'showstringspaces'
+  showstringspaces=false,          % underline spaces within strings only
+  showtabs=false,                  % show tabs within strings adding particular underscores
+  stepnumber=1,                    % the step between two line-numbers. If it's 1, each line will be numbered
+  stringstyle=\color{mymauve}     % string literal style
+  %tabsize=2,                      % sets default tabsize to 2 spaces
+  %caption=\lstname                % show the filename of files included with \lstinputlisting; also try caption instead of title
+}
+
+
+% Uncomment draftcopy to get the word DRAFT boldly across the first page
+%   By the way, xdvi won't show it but it will come out when you print
+%\usepackage[light,all]{draftcopy}		% DRAFT on first page
+%\draftcopySetGrey{.97}
+%\draftcopyName{Confidential}{150}
+%\draftcopFirstPage{1}
+
+% Uncomment drafthead to get the date and DRAFT in the header of pages
+% that are normallly numbered on the top, pages 2-n of each chapter for example
+% This doesn't work with centered page numbers: \pagestyle{cornellc}
+%\usepackage{drafthead}
+
+% glossaries to organize the document glossary
+\usepackage[toc,
+    chapter,
+    numberedchapter = autolabel
+    ]{glossaries}
+
+% glossary creation
+\input{dsnGlossary.tex}
+%\makeglossaries
+\makenoidxglossaries
+\makeindex
+
+% Including selective chapters:
+% use this to selectively process chapters, etc.  Put a % in front of
+% the sections that you don't want done this time.  Includes are
+% used instead of \input so that LaTeX will keep track of chapters and
+% pages without processing everything.  Don't let any spaces creep in
+% around the words or it will not work!
+
+\includeonly{
+0prologue,
+1dsnCH1,
+1dsnExercise4_1,
+1dsnExercise4_2,
+1dsnExercise4_3,
+1dsnDiagramPython,
+1dsnExercise4_5,
+2dsnCH2,
+2dsnRequirements,
+%dsnRequirements,
+2dsnUseCases,
+2dsnCRC_Classes,
+2dsnFTDI_Design,
+3dsnCH3,
+3UsabilitySecurityETC,
+4dsnCH4,
+4dsnArchPatterns,
+5dsnCH5,
+5dsnLibSepResp,
+8dsnCH8,
+8dsnMultithreadedPipeline,
+9dsnCH9,
+9dsnUtilityTree,
+10dsnCH10,
+%1dsnUserStories,
+%1dsnDocHistory,
+%2dsnCH2,
+%2dsnExercise,
+%dsnUseCases,
+%dsnUserInterfaceDesign,
+%dsnLogicalView,
+%dsnProcessView,
+%dsnDevelopmentView,
+%dsnPhysicalView,
+dsnWeeklyReports
+}
+
+
+\begin{document}
+
+\pagenumbering{roman}
+\singlespacing
+\include{0prologue}
+
+\setcounter{page}{1}        % set page counter
+\pagenumbering{arabic}      % set page number style
+\pagestyle{fancy}         % top right page numbers
+%\pagestyle{cornell}
+%\pagestyle{cornellc}       % centered page numbers, disables drafthead
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+\renewcommand{\sectionmark}[1]{\markright{#1}{}}
+
+\fancyhead{} % clear all fields
+
+\lhead{Chapter \thechapter}
+%\lhead{\thechapter}
+\chead{\leftmark}
+\rhead{\thepage}
+
+
+\lfoot{Chapter \thechapter}
+\cfoot{\copyright Stevens -- \today \mbox{} -- Do Not Distribute!}
+\rfoot{\thepage}
+
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+%\rhead{F054-021-0172}
+%\chead{Nonlinear Enhancement of Visual Target Detection (AF05-T021)}
+%\lhead{GSTI}
+%\lfoot{\scriptsize Use or disclosure of data on this page is subject
+%to the restriction on the title page of this proposal.}
+%\cfoot{}
+%\rfoot{\thepage}
+
+
+\singlespacing
+\include{1dsnCH1}
+\include{1dsnExercise4_1}
+\include{1dsnExercise4_2}
+\include{1dsnExercise4_3}
+\include{1dsnDiagramPython}
+\include{1dsnExercise4_5}
+\include{2dsnCH2}
+\include{2dsnRequirements}
+%\include{dsnRequirements}
+\include{2dsnUseCases}
+\include{2dsnCRC_Classes}
+\include{2dsnFTDI_Design.tex}
+\include{3dsnCH3}
+\include{3UsabilitySecurityETC}
+\include{4dsnCH4}
+\include{4dsnArchPatterns}
+\include{5dsnCH5}
+\include{5dsnLibSepResp}
+\include{8dsnCH8}
+\include{9dsnCH9}
+\include{10dsnCH10}
+%\include{1dsnUserStories}
+%\include{1dsnDocHistory}
+%\include{2dsnCH2}
+%\include{2dsnExercise}
+%\include{dsnUseCases}
+%\include{dsnUserInterfaceDesign}
+%\include{dsnLogicalView}
+%\include{dsnProcessView}
+%\include{dsnDevelopmentView}
+%\include{dsnPhysicalView}
+\appendix
+\include{dsnWeeklyReports}
+
+%\makeglossaries 0dsnManual -- from command prompt.
+\clearpage
+\printglossaries
+
+
+\printnoidxglossaries
+
+\cleardoublepage
+\phantomsection
+%\addcontentsline{toc}{chapter}{Bibliography}
+\label{chap:bibliography}
+\bibliographystyle{IEEEtran}
+\bibliography{bibfile}
+
+\cleardoublepage
+\phantomsection
+\addcontentsline{toc}{chapter}{Index}
+\label{chap:index}
+\printindex
+%\input{dsnManual.idx}
+
+\end{document}

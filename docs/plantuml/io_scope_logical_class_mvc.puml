@@ -1,0 +1,83 @@
+@startuml
+title ioScope Logical Class View - Qt MVC Slice
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Bootstrap and CLI" {
+  class ioScopeShell
+  class ioFileComparator
+}
+
+package "Qt MVC" {
+  abstract class ioOscilloscopeView
+  class ioCompactOscilloscopeView
+  class ioDetailedOscilloscopeView
+  interface ioOscilloscopeWindow
+  class ioQtScopeWindow
+  class ioTkOscilloscopeWindow <<legacy>>
+  class ioOscilloscopeController
+  class ioOscilloscopeModel
+  class ioControlState
+  class ioViewportState
+  class ioRenderState
+  class ioScopeSettingsStore
+}
+
+package "Signal Flow Context" {
+  class ioFilterPipeline
+  class ioWaveformGenerator
+}
+
+package "Theme Hierarchy" {
+  abstract class ioViewTheme
+  abstract class ioStaticThemeBase
+  class ioPortraitTheme
+  class ioLandscapeTheme
+}
+
+package "Live Session Context" {
+  class ioLiveOscilloscopeSession
+}
+
+ioScopeShell --> ioOscilloscopeController
+ioScopeShell --> ioScopeSettingsStore
+
+ioCompactOscilloscopeView --|> ioOscilloscopeView
+ioDetailedOscilloscopeView --|> ioOscilloscopeView
+ioTkOscilloscopeWindow ..> ioOscilloscopeWindow
+ioQtScopeWindow --> ioCompactOscilloscopeView
+ioQtScopeWindow --> ioDetailedOscilloscopeView
+ioQtScopeWindow --> ioOscilloscopeController
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioOscilloscopeView
+ioOscilloscopeController --> ioRenderState
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioControlState
+ioOscilloscopeModel --> ioViewportState
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+ioOscilloscopeView --> ioViewTheme
+
+ioPortraitTheme --|> ioStaticThemeBase
+ioLandscapeTheme --|> ioStaticThemeBase
+ioStaticThemeBase --|> ioViewTheme
+
+note right of ioOscilloscopeView
+Primary MVC rule:
+one abstract View boundary only.
+Both selectable Qt UIs inherit this class.
+end note
+
+note right of ioQtScopeWindow
+Qt host shell only.
+It switches between concrete view instances
+and is not a second View abstraction.
+end note
+
+note bottom of ioTkOscilloscopeWindow
+Legacy compatibility path only.
+It is documented honestly but is not part of
+the primary Qt submission path.
+end note
+@enduml

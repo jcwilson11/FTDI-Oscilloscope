@@ -1,0 +1,76 @@
+@startuml
+title ioScope Development View - Signal, Theme, and Live Session Files
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "oscilloscope/ Live Session Files" {
+  [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+  [io_live_sample_history.py\nioLiveSampleHistory]
+  [io_tapped_readable_byte_stream.py\nioTappedReadableByteStream]
+  [io_live_file_tail_byte_stream.py\nioLiveFileTailByteStream]
+  [io_generated_waveform_byte_stream.py\nioGeneratedWaveformByteStream]
+  [io_null_writable_byte_stream.py\nioNullWritableByteStream]
+}
+
+package "oscilloscope/ Filter Files" {
+  [io_signal_filter.py\nioSignalFilter]
+  [io_sample_mapping_filter_base.py\nioSampleMappingFilterBase]
+  [io_scale_filter.py\nioScaleFilter]
+  [io_offset_filter.py\nioOffsetFilter]
+  [io_filter_pipeline.py\nioFilterPipeline]
+}
+
+package "oscilloscope/ Source Files" {
+  [io_signal_source.py\nioSignalSource]
+  [io_generated_waveform_source.py\nioGeneratedWaveformSource]
+  [io_file_waveform_source.py\nioFileWaveformSource]
+  [io_ftdi_waveform_source.py\nioFtdiWaveformSource]
+  [io_waveform_generator.py\nioWaveformGenerator]
+}
+
+package "oscilloscope/ Theme Files" {
+  [io_view_theme.py\nioViewTheme]
+  [io_static_theme_base.py\nioStaticThemeBase]
+  [io_portrait_theme.py\nioPortraitTheme]
+  [io_landscape_theme.py\nioLandscapeTheme]
+}
+
+package "Context Files" {
+  [io_oscilloscope_controller.py\nioOscilloscopeController]
+  [io_oscilloscope_model.py\nioOscilloscopeModel]
+  [io_oscilloscope_view.py\nioOscilloscopeView]
+  [io_ftdi_byte_stream.py\nioFtdiByteStream]
+  [io_pipeline_controller.py\nioPipelineController]
+}
+
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_filter_pipeline.py\nioFilterPipeline]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_waveform_generator.py\nioWaveformGenerator]
+[io_oscilloscope_view.py\nioOscilloscopeView] --> [io_view_theme.py\nioViewTheme]
+
+[io_filter_pipeline.py\nioFilterPipeline] --> [io_scale_filter.py\nioScaleFilter]
+[io_filter_pipeline.py\nioFilterPipeline] --> [io_offset_filter.py\nioOffsetFilter]
+[io_scale_filter.py\nioScaleFilter] --> [io_sample_mapping_filter_base.py\nioSampleMappingFilterBase]
+[io_offset_filter.py\nioOffsetFilter] --> [io_sample_mapping_filter_base.py\nioSampleMappingFilterBase]
+[io_sample_mapping_filter_base.py\nioSampleMappingFilterBase] --> [io_signal_filter.py\nioSignalFilter]
+
+[io_waveform_generator.py\nioWaveformGenerator] --> [io_generated_waveform_source.py\nioGeneratedWaveformSource]
+[io_waveform_generator.py\nioWaveformGenerator] --> [io_file_waveform_source.py\nioFileWaveformSource]
+[io_waveform_generator.py\nioWaveformGenerator] --> [io_ftdi_waveform_source.py\nioFtdiWaveformSource]
+[io_generated_waveform_source.py\nioGeneratedWaveformSource] --> [io_signal_source.py\nioSignalSource]
+[io_file_waveform_source.py\nioFileWaveformSource] --> [io_signal_source.py\nioSignalSource]
+[io_ftdi_waveform_source.py\nioFtdiWaveformSource] --> [io_signal_source.py\nioSignalSource]
+[io_ftdi_waveform_source.py\nioFtdiWaveformSource] --> [io_ftdi_byte_stream.py\nioFtdiByteStream]
+
+[io_portrait_theme.py\nioPortraitTheme] --> [io_static_theme_base.py\nioStaticThemeBase]
+[io_landscape_theme.py\nioLandscapeTheme] --> [io_static_theme_base.py\nioStaticThemeBase]
+[io_static_theme_base.py\nioStaticThemeBase] --> [io_view_theme.py\nioViewTheme]
+
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_live_sample_history.py\nioLiveSampleHistory]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_tapped_readable_byte_stream.py\nioTappedReadableByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_live_file_tail_byte_stream.py\nioLiveFileTailByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_generated_waveform_byte_stream.py\nioGeneratedWaveformByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_null_writable_byte_stream.py\nioNullWritableByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_pipeline_controller.py\nioPipelineController]
+@enduml

@@ -414,6 +414,20 @@
       "payload": {
         "input_source": "ftdi:0"
       }
+    },
+    {
+      "timestamp": "2026-04-20T03:59:32-04:00",
+      "event_type": "active_view_change",
+      "payload": {
+        "active_view": "compact"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T04:00:03-04:00",
+      "event_type": "active_view_change",
+      "payload": {
+        "active_view": "detailed"
+      }
     }
   ]
 }
