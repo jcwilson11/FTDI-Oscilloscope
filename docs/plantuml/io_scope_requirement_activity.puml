@@ -1,0 +1,69 @@
+@startuml
+title ioScope Required Activity Diagram
+
+skinparam shadowing false
+
+start
+
+|ioPipelineController|
+:Parse CLI configuration;
+:Create ioDataBuffer;
+:Select ioReadableByteStream implementation;
+:Select ioWritableByteStream implementation;
+:Start ioUsbWriteController thread;
+:Start ioUsbReadController thread;
+
+fork
+  |ioUsbReadController|
+  while (Stop requested?) is (no)
+    if (Input mode is file?) then (yes)
+      :Read chunk from input file;
+    else (no)
+      :Read chunk from FTDI input device;
+    endif
+
+    if (Bytes returned?) then (yes)
+      |ioDataBuffer|
+      if (Buffer full?) then (yes)
+        :Wait for not_full condition;
+      endif
+      :Push byte chunk into buffer;
+      |ioUsbReadController|
+    else (no)
+      if (Input source exhausted?) then (yes)
+        |ioDataBuffer|
+        :Close buffer for writer drain;
+        |ioUsbReadController|
+        break
+      else (no)
+        :Signal failure and close buffer;
+      endif
+    endif
+  endwhile (yes)
+fork again
+  |ioUsbWriteController|
+  while (Buffer closed and drained?) is (no)
+    |ioDataBuffer|
+    if (Buffer empty?) then (yes)
+      :Wait for not_empty condition;
+    else (no)
+      :Pop next byte chunk;
+      |ioUsbWriteController|
+      if (Destination is file?) then (yes)
+        :Write chunk to ioFileByteStream;
+      else (no)
+        :Write chunk to ioFtdiOutputByteStream;
+      endif
+    endif
+  endwhile (yes)
+end fork
+
+|ioPipelineController|
+:Request reader stop;
+:Close ioDataBuffer;
+:Request writer stop;
+:Join worker threads;
+:Writer closes selected output stream during stop;
+stop
+
+@enduml

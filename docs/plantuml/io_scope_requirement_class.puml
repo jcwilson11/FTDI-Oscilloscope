@@ -1,0 +1,92 @@
+@startuml
+title ioScope Required Class Diagram
+skinparam packageStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Bootstrap and CLI" as bootstrap {
+  class ioScopeShell
+  class ioPipelineCli
+  class ioLegacyFtdiCli
+  class ioFileComparator
+}
+
+package "Qt MVC" as mvc {
+  class ioQtScopeWindow
+  abstract class ioOscilloscopeView
+  class ioOscilloscopeController
+  class ioOscilloscopeModel
+}
+
+package "Signal Flow" as signal {
+  class ioFilterPipeline
+  class ioWaveformGenerator
+  interface ioSignalSource
+}
+
+package "Live Acquisition" as live {
+  class ioLiveOscilloscopeSession
+  class ioLiveSampleHistory
+  class ioTappedReadableByteStream
+}
+
+package "FTDI Streams and Session" as streams {
+  class ioFtdiSession
+  class ioFtdiByteStream
+  class ioFtdiOutputByteStream
+  class ioFtdiDevice
+}
+
+package "Transfer Pipeline" as pipeline {
+  class ioPipelineController
+  class ioDataBuffer
+  class ioUsbReadController
+  class ioUsbWriteController
+}
+
+package "Legacy Operations" as legacy {
+  class ioBuffer <<legacy>>
+  class ioBaseIoOperation <<legacy>>
+  class ioRead <<legacy>>
+  class ioWrite <<legacy>>
+}
+
+ioScopeShell --> ioOscilloscopeController
+ioPipelineCli --> ioPipelineController
+ioLegacyFtdiCli --> ioFtdiDevice
+
+ioQtScopeWindow --> ioOscilloscopeController
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioOscilloscopeView
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+ioWaveformGenerator ..> ioSignalSource
+
+ioLiveOscilloscopeSession --> ioLiveSampleHistory
+ioLiveOscilloscopeSession --> ioTappedReadableByteStream
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioFtdiDevice --|> ioFtdiSession
+ioFtdiByteStream ..> ioFtdiSession
+ioFtdiOutputByteStream ..> ioFtdiSession
+
+ioPipelineController --> ioDataBuffer
+ioPipelineController --> ioUsbReadController
+ioPipelineController --> ioUsbWriteController
+
+ioRead --|> ioBaseIoOperation
+ioWrite --|> ioBaseIoOperation
+ioBaseIoOperation --> ioBuffer
+ioBaseIoOperation ..> ioFtdiSession
+
+note right of mvc
+This overview is intentionally compact so it fits
+in slides and Overleaf exports.
+Use the split detail diagrams for the full class set:
+- io_scope_logical_class_mvc.puml
+- io_scope_logical_class_signal_flow.puml
+- io_scope_logical_class_ftdi_streams.puml
+- io_scope_logical_class_transfer_pipeline.puml
+end note
+@enduml

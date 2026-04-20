@@ -2,16 +2,15 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug controller.exe (Windows)",
-      "type": "cppvsdbg",
-      "request": "launch",
-      "program": "${workspaceFolder}\\controller.exe",
-      "args": [],
-      "stopAtEntry": false,
-      "cwd": "${workspaceFolder}",
-      "console": "externalTerminal",
-      "preLaunchTask": "build-controller-msvc"
-    },
+  "name": "Python: controller.py scope-qt",
+  "type": "debugpy",
+  "request": "launch",
+  "program": "${workspaceFolder}/controller.py",
+  "console": "integratedTerminal",
+  "cwd": "${workspaceFolder}",
+  "args": ["scope-qt"]
+}
+,
     {
       "name": "Debug controller (macOS)",
       "type": "cppdbg",

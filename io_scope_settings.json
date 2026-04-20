@@ -5,8 +5,8 @@
     "input_source": "ftdi:0",
     "generated_waveform": "sine",
     "live_file_path": "demo_input.bin",
-    "scale": 4.0,
-    "offset": 2.0,
+    "scale": 1.0,
+    "offset": 1.0,
     "active_theme": "portrait",
     "active_view": "detailed",
     "ftdi_input_device_index": 0,
@@ -14,9 +14,9 @@
     "ftdi_bytes_per_read": 256,
     "ftdi_dll_path": "",
     "write_to_ftdi_enabled": false,
-    "tee_output_enabled": true,
+    "tee_output_enabled": false,
     "tee_output_mode": "file",
-    "tee_output_path": "demo_ftdi_capture.bin",
+    "tee_output_path": "demo_output.bin",
     "render_interval_ms": 50
   },
   "viewport_state": {
@@ -25,21 +25,7 @@
   },
   "event_log": [
     {
-      "timestamp": "2026-04-20T02:41:52-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "detailed"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:41:55-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "compact"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:15-04:00",
+      "timestamp": "2026-04-20T17:02:41-04:00",
       "event_type": "session_start",
       "payload": {
         "input_source": "sine",
@@ -47,113 +33,70 @@
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:28-04:00",
+      "timestamp": "2026-04-20T17:02:46-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 1.25
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:29-04:00",
+      "timestamp": "2026-04-20T17:02:46-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 1.5
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:29-04:00",
+      "timestamp": "2026-04-20T17:02:46-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 1.75
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:30-04:00",
+      "timestamp": "2026-04-20T17:02:46-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 2.0
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:31-04:00",
-      "event_type": "session_stop",
-      "payload": {
-        "input_source": "sine"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:36-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "sine",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:38-04:00",
+      "timestamp": "2026-04-20T17:02:46-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 2.25
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:39-04:00",
+      "timestamp": "2026-04-20T17:02:47-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 2.5
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:39-04:00",
+      "timestamp": "2026-04-20T17:02:47-04:00",
       "event_type": "scale_change",
       "payload": {
         "scale": 2.75
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:39-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 3.0
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:40-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 3.25
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:40-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 3.5
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:40-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 3.75
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:41-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 4.0
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:42:43-04:00",
+      "timestamp": "2026-04-20T17:02:49-04:00",
       "event_type": "session_stop",
       "payload": {
         "input_source": "sine"
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:49-04:00",
+      "timestamp": "2026-04-20T17:03:28-04:00",
+      "event_type": "active_view_change",
+      "payload": {
+        "active_view": "detailed"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:03:38-04:00",
       "event_type": "session_start",
       "payload": {
         "input_source": "sine",
@@ -161,272 +104,228 @@
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:53-04:00",
+      "timestamp": "2026-04-20T17:03:49-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 0.25
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:53-04:00",
+      "timestamp": "2026-04-20T17:03:49-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 0.5
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:54-04:00",
+      "timestamp": "2026-04-20T17:03:49-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 0.75
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:54-04:00",
+      "timestamp": "2026-04-20T17:03:49-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 1.0
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:55-04:00",
+      "timestamp": "2026-04-20T17:03:49-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 1.25
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:55-04:00",
+      "timestamp": "2026-04-20T17:03:49-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 1.5
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:55-04:00",
+      "timestamp": "2026-04-20T17:03:50-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 1.75
       }
     },
     {
-      "timestamp": "2026-04-20T02:42:56-04:00",
+      "timestamp": "2026-04-20T17:03:50-04:00",
       "event_type": "offset_change",
       "payload": {
         "offset": 2.0
       }
     },
     {
-      "timestamp": "2026-04-20T02:43:00-04:00",
-      "event_type": "active_view_change",
+      "timestamp": "2026-04-20T17:03:50-04:00",
+      "event_type": "offset_change",
       "payload": {
-        "active_view": "detailed"
+        "offset": 2.25
       }
     },
     {
-      "timestamp": "2026-04-20T02:43:07-04:00",
-      "event_type": "active_view_change",
+      "timestamp": "2026-04-20T17:03:50-04:00",
+      "event_type": "offset_change",
       "payload": {
-        "active_view": "compact"
+        "offset": 2.5
       }
     },
     {
-      "timestamp": "2026-04-20T02:43:41-04:00",
+      "timestamp": "2026-04-20T17:03:50-04:00",
+      "event_type": "offset_change",
+      "payload": {
+        "offset": 2.75
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:03:50-04:00",
+      "event_type": "offset_change",
+      "payload": {
+        "offset": 3.0
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:03:55-04:00",
       "event_type": "session_stop",
       "payload": {
         "input_source": "sine"
       }
     },
     {
-      "timestamp": "2026-04-20T02:43:48-04:00",
-      "event_type": "source_change",
-      "payload": {
-        "input_source": "file:demo_input.bin"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:00-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:07-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:08-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:10-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "detailed"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:11-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:12-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:13-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:14-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:21-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "compact"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:48-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:50-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "file:demo_input.bin",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:44:54-04:00",
-      "event_type": "source_change",
-      "payload": {
-        "input_source": "ftdi:0"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:45:21-04:00",
+      "timestamp": "2026-04-20T17:04:03-04:00",
       "event_type": "tee_output_enabled_change",
       "payload": {
         "tee_output_enabled": true
       }
     },
     {
-      "timestamp": "2026-04-20T02:45:28-04:00",
+      "timestamp": "2026-04-20T17:04:12-04:00",
       "event_type": "tee_output_mode_change",
       "payload": {
         "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-04-20T02:45:28-04:00",
-      "event_type": "recovery_message",
-      "payload": {
-        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:45:34-04:00",
+      "timestamp": "2026-04-20T17:04:21-04:00",
       "event_type": "tee_output_mode_change",
       "payload": {
         "tee_output_mode": "file"
       }
     },
     {
-      "timestamp": "2026-04-20T02:45:55-04:00",
-      "event_type": "tee_output_path_change",
-      "payload": {
-        "tee_output_path": "demo_ftdi_capture.bin"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:45:55-04:00",
-      "event_type": "recovery_message",
-      "payload": {
-        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:46:07-04:00",
-      "event_type": "session_stop",
-      "payload": {
-        "input_source": "ftdi:0"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:46:49-04:00",
+      "timestamp": "2026-04-20T17:04:28-04:00",
       "event_type": "session_start",
       "payload": {
-        "input_source": "ftdi:0",
+        "input_source": "sine",
         "tee_output_mode": "file"
       }
     },
     {
-      "timestamp": "2026-04-20T02:46:51-04:00",
-      "event_type": "recovery_message",
+      "timestamp": "2026-04-20T17:04:35-04:00",
+      "event_type": "tee_output_mode_change",
       "payload": {
-        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+        "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-04-20T02:46:55-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "detailed"
-      }
-    },
-    {
-      "timestamp": "2026-04-20T02:47:09-04:00",
+      "timestamp": "2026-04-20T17:05:00-04:00",
       "event_type": "session_stop",
+      "payload": {
+        "input_source": "sine"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:07:49-04:00",
+      "event_type": "source_change",
       "payload": {
         "input_source": "ftdi:0"
       }
     },
     {
-      "timestamp": "2026-04-20T03:59:32-04:00",
+      "timestamp": "2026-04-20T17:07:57-04:00",
       "event_type": "active_view_change",
       "payload": {
         "active_view": "compact"
       }
     },
     {
-      "timestamp": "2026-04-20T04:00:03-04:00",
+      "timestamp": "2026-04-20T17:08:01-04:00",
+      "event_type": "recovery_message",
+      "payload": {
+        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:08:14-04:00",
+      "event_type": "recovery_message",
+      "payload": {
+        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:08:15-04:00",
+      "event_type": "session_stop",
+      "payload": {
+        "input_source": "ftdi:0"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:08:37-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 1.0
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:08:39-04:00",
+      "event_type": "offset_change",
+      "payload": {
+        "offset": 1.0
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:08:43-04:00",
+      "event_type": "recovery_message",
+      "payload": {
+        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:09:50-04:00",
+      "event_type": "recovery_message",
+      "payload": {
+        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:09:57-04:00",
+      "event_type": "tee_output_mode_change",
+      "payload": {
+        "tee_output_mode": "file"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:10:01-04:00",
+      "event_type": "recovery_message",
+      "payload": {
+        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:12:05-04:00",
       "event_type": "active_view_change",
       "payload": {
         "active_view": "detailed"
+      }
+    },
+    {
+      "timestamp": "2026-04-20T17:12:18-04:00",
+      "event_type": "tee_output_enabled_change",
+      "payload": {
+        "tee_output_enabled": false
       }
     }
   ]

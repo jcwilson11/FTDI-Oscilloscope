@@ -1,0 +1,40 @@
+@startuml
+title ioScope Scenario View - Start FTDI Session with Tee-to-File
+autonumber
+
+actor User
+participant ioQtScopeWindow as Window
+participant ioOscilloscopeController as Controller
+participant ioOscilloscopeModel as Model
+participant ioLiveOscilloscopeSession as LiveSession
+participant ioTappedReadableByteStream as Tapped
+participant ioFtdiByteStream as FtdiIn
+participant ioFileByteStream as FileOut
+participant ioPipelineController as PipelineController
+participant ioDetailedOscilloscopeView as Detailed
+
+User -> Window : click Start
+Window -> Controller : start()
+Controller -> Model : refreshSamples()
+Controller -> Controller : _start_live_session()
+Controller -> LiveSession : start(control_state)
+LiveSession -> LiveSession : build input stream from FTDI settings
+LiveSession -> FtdiIn : create(device_index=0)
+LiveSession -> Tapped : wrap(FtdiIn, sample_history)
+LiveSession -> LiveSession : build output stream from tee settings
+LiveSession -> FileOut : create("demo_ftdi_capture.bin")
+LiveSession -> LiveSession : build ioPipelineConfig
+LiveSession -> PipelineController : create(cfg, Tapped, FileOut)
+LiveSession -> PipelineController : start()
+PipelineController -> PipelineController : writer.start()
+PipelineController -> PipelineController : reader.start()
+Controller -> Model : appendEvent("session_start")
+Controller -> Detailed : render(ioRenderState)
+Detailed --> User : detailed UI shows FTDI + tee=file status
+
+note over LiveSession, PipelineController
+The live session owns pipeline construction for the GUI mode.
+The same backend transfer architecture is reused instead of
+moving FTDI logic into the Qt layer.
+end note
+@enduml

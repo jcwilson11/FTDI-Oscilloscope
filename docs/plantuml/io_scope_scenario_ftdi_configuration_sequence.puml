@@ -1,0 +1,45 @@
+@startuml
+title ioScope Scenario View - Configure FTDI Input and Tee-to-File
+autonumber
+
+actor User
+participant ioQtScopeWindow as Window
+participant ioOscilloscopeController as Controller
+participant ioOscilloscopeModel as Model
+
+User -> Window : choose source = "FTDI Device"
+Window -> Controller : setInputSource("ftdi:0")
+Controller -> Model : setInputSource("ftdi:0")
+Controller -> Model : appendEvent("source_change")
+Controller --> Window : render updated preview state
+
+User -> Window : set FTDI In = 0
+Window -> Controller : setFtdiInputDeviceIndex(0)
+Controller -> Model : setFtdiInputDeviceIndex(0)
+Controller -> Model : appendEvent("ftdi_input_device_change")
+Controller --> Window : render updated preview state
+
+User -> Window : check "Enable tee output"
+Window -> Controller : setTeeOutputEnabled(true)
+Controller -> Model : setTeeOutputEnabled(true)
+Controller -> Model : appendEvent("tee_output_enabled_change")
+Controller --> Window : render updated preview state
+
+User -> Window : choose tee mode = "File"
+Window -> Controller : setTeeOutputMode("file")
+Controller -> Model : setTeeOutputMode("file")
+Controller -> Model : appendEvent("tee_output_mode_change")
+Controller --> Window : render updated preview state
+
+User -> Window : enter tee path = "demo_ftdi_capture.bin"
+Window -> Controller : setTeeOutputPath("demo_ftdi_capture.bin")
+Controller -> Model : setTeeOutputPath("demo_ftdi_capture.bin")
+Controller -> Model : appendEvent("tee_output_path_change")
+Controller --> Window : render updated preview state
+
+note over Window, Model
+These interactions update control state before acquisition starts.
+If the session is already running, the controller restarts the
+live session so the new FTDI and tee-output settings take effect.
+end note
+@enduml

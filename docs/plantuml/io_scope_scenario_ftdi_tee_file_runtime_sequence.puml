@@ -1,0 +1,53 @@
+@startuml
+title ioScope Scenario View - FTDI Read, Tee to File, and Live Refresh
+autonumber
+
+actor User
+participant ioQtScopeWindow as Window
+participant ioOscilloscopeController as Controller
+participant ioLiveOscilloscopeSession as LiveSession
+participant ioPipelineController as PipelineController
+participant ioUsbReadController as Reader
+participant ioTappedReadableByteStream as Tapped
+participant ioLiveSampleHistory as History
+participant ioDataBuffer as Buffer
+participant ioUsbWriteController as Writer
+participant ioFileByteStream as FileOut
+participant ioOscilloscopeModel as Model
+participant ioFilterPipeline as Pipeline
+participant ioCompactOscilloscopeView as Compact
+participant ioDetailedOscilloscopeView as Detailed
+
+loop while session is running
+  Reader -> Tapped : read_bytes(chunk)
+  Tapped -> History : append_bytes(payload)
+  Reader -> Buffer : push(payload)
+  Writer -> Buffer : pop(chunk)
+  Writer -> FileOut : write_bytes(payload)
+
+  Window -> Controller : refreshLiveSession()
+  Controller -> LiveSession : latest_samples(limit)
+  LiveSession -> History : latest_samples(limit)
+  History --> LiveSession : normalized samples
+  LiveSession --> Controller : latest samples
+  Controller -> Model : setRawSignal(samples)
+  Model -> Pipeline : process(raw signal)
+  Pipeline --> Model : processed signal
+  Controller -> Compact : render(ioRenderState)
+  Controller -> Detailed : render(ioRenderState)
+  Window -> Window : show active concrete view instance
+end
+
+User -> Window : click Stop
+Window -> Controller : stop()
+Controller -> LiveSession : stop()
+LiveSession -> PipelineController : stop()
+PipelineController -> Buffer : close()
+Controller -> Model : appendEvent("session_stop")
+
+note over Reader, FileOut
+Incoming FTDI bytes are mirrored in two directions:
+into sample history for the waveform and into the tee-output
+file through the shared circular-buffer pipeline.
+end note
+@enduml
