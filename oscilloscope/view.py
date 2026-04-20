@@ -1,21 +1,12 @@
-from __future__ import annotations
+"""Backward-compatible view import surface for older demos and tests.
 
+The primary abstraction is ``ioOscilloscopeView``.
+``OscilloscopeView`` remains mapped to the compact concrete Qt view.
+"""
 
-class OscilloscopeView:
-    """View boundary that renders processed signal data only."""
+from .io_compact_oscilloscope_view import ioCompactOscilloscopeView
+from .io_oscilloscope_view import ioOscilloscopeView
 
-    def __init__(self, canvas: str = "Canvas", controls: str = "ControlPanel"):
-        self.canvas = canvas
-        self.controls = controls
-        self.lastRenderedSignal: list[float] = []
+OscilloscopeView = ioCompactOscilloscopeView
 
-    def render(self, signal: list[float]) -> dict:
-        self.lastRenderedSignal = list(signal)
-        return {
-            "canvas": self.canvas,
-            "controls": self.controls,
-            "signal": list(signal),
-        }
-
-    def getUserInput(self, command: str) -> str:
-        return command
+__all__ = ["OscilloscopeView", "ioOscilloscopeView"]

@@ -1,0 +1,41 @@
+@startuml
+title ioScope Object View
+skinparam shadowing false
+
+object controller as "controller : ioOscilloscopeController"
+object model as "model : ioOscilloscopeModel"
+object qtWindow as "qtWindow : ioQtScopeWindow"
+object compactView as "compactView : ioCompactOscilloscopeView"
+object detailedView as "detailedView : ioDetailedOscilloscopeView"
+object controlState as "controlState : ioControlState"
+object viewportState as "viewportState : ioViewportState"
+object filterPipeline as "filterPipeline : ioFilterPipeline"
+object waveformGenerator as "waveformGenerator : ioWaveformGenerator"
+object dataBuffer as "dataBuffer : ioDataBuffer"
+object readWorker as "readWorker : ioUsbReadController"
+object writeWorker as "writeWorker : ioUsbWriteController"
+
+qtWindow --> controller
+qtWindow --> compactView
+qtWindow --> detailedView
+controller --> model
+controller --> compactView
+controller --> detailedView
+model --> controlState
+model --> viewportState
+model --> filterPipeline
+model --> waveformGenerator
+readWorker --> dataBuffer
+writeWorker --> dataBuffer
+
+note over qtWindow, detailedView
+One abstract View contract exists in the class design.
+This object view shows two concrete Qt view instances
+hosted by the Qt window.
+end note
+
+note bottom of dataBuffer
+This runtime object is the single shared circular buffer
+used by the implemented producer-consumer path.
+end note
+@enduml

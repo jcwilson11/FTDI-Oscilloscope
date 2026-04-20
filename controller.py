@@ -1,282 +1,47 @@
 import argparse
 import sys
-import time
-from pathlib import Path
 
-from ftd2xx_wrapper import FtdiDevice, FtdiError
+from ftd2xx_wrapper import FtdiError
 from ioLibrary import PipelineConfig, PipelineController
 
-
-MORSE_CODE = {
-    "A": ".-",
-    "B": "-...",
-    "C": "-.-.",
-    "D": "-..",
-    "E": ".",
-    "F": "..-.",
-    "G": "--.",
-    "H": "....",
-    "I": "..",
-    "J": ".---",
-    "K": "-.-",
-    "L": ".-..",
-    "M": "--",
-    "N": "-.",
-    "O": "---",
-    "P": ".--.",
-    "Q": "--.-",
-    "R": ".-.",
-    "S": "...",
-    "T": "-",
-    "U": "..-",
-    "V": "...-",
-    "W": ".--",
-    "X": "-..-",
-    "Y": "-.--",
-    "Z": "--..",
-    "0": "-----",
-    "1": ".----",
-    "2": "..---",
-    "3": "...--",
-    "4": "....-",
-    "5": ".....",
-    "6": "-....",
-    "7": "--...",
-    "8": "---..",
-    "9": "----.",
-}
+from io_file_comparator import ioFileComparator
+from io_legacy_ftdi_cli import ioLegacyFtdiCli
+from io_pipeline_cli import ioPipelineCli
 
 
-def write_message(device: FtdiDevice, message: str, pin_mask: int = 0x01):
-    unit_seconds = 0.1
-    for character in message:
-        if character == " ":
-            time.sleep(unit_seconds * 7)
-            continue
+_LEGACY_CLI = ioLegacyFtdiCli()
 
-        morse = MORSE_CODE.get(character.upper())
-        if not morse:
-            continue
 
-        print(f"Morse code for '{character}': {morse}")
-        for symbol in morse:
-            device.write_byte(pin_mask)
-            time.sleep(unit_seconds if symbol == "." else unit_seconds * 3)
-            device.write_byte(0x00)
-            time.sleep(unit_seconds)
-        time.sleep(unit_seconds * 2)
+def write_message(device, message: str, pin_mask: int = 0x01):
+    _LEGACY_CLI.write_message(device, message, pin_mask=pin_mask)
 
 
 def prompt_int(prompt: str, minimum: int, maximum: int) -> int:
-    while True:
-        raw = input(prompt).strip()
-        try:
-            value = int(raw, 0)
-        except ValueError:
-            print("Enter a valid integer.")
-            continue
-
-        if minimum <= value <= maximum:
-            return value
-
-        print(f"Enter a value between {minimum} and {maximum}.")
+    return _LEGACY_CLI.prompt_int(prompt, minimum, maximum)
 
 
-def control_leds(device: FtdiDevice):
-    state = 0x00
-    while True:
-        raw = input("\nEnter pin 0-7, 'reset', or 'done': ").strip().lower()
-        if raw == "done":
-            break
-        if raw == "reset":
-            state = 0x00
-            device.write_byte(state)
-            print("All pins set to OFF.")
-            continue
-
-        try:
-            pin = int(raw)
-        except ValueError:
-            print("Enter a pin number, 'reset', or 'done'.")
-            continue
-
-        if not 0 <= pin <= 7:
-            print("Pin must be between 0 and 7.")
-            continue
-
-        for current_pin in range(8):
-            pin_state = "ON" if state & (1 << current_pin) else "OFF"
-            print(f"Pin {current_pin} = {pin_state}")
-
-        new_value = prompt_int(f"Enter new state for pin {pin} (0 or 1): ", 0, 1)
-        if new_value:
-            state |= 1 << pin
-        else:
-            state &= ~(1 << pin)
-
-        device.write_byte(state)
-        print(f"Wrote 0x{state:02X}")
+def control_leds(device):
+    _LEGACY_CLI.control_leds(device)
 
 
-def interactive_menu(device: FtdiDevice):
-    while True:
-        print("\nControl Menu")
-        print("1. Control LEDs")
-        print("2. Send Morse Code")
-        print("3. Write byte to port")
-        print("4. Read byte from port")
-        print("5. Exit")
-
-        choice = input("Enter your choice: ").strip()
-        if choice == "1":
-            control_leds(device)
-        elif choice == "2":
-            message = input("Enter your message (blank line to cancel): ")
-            if message:
-                write_message(device, message)
-        elif choice == "3":
-            value = prompt_int("Enter byte value (0-255, hex allowed): ", 0, 255)
-            device.write_byte(value)
-            print(f"Wrote 0x{value:02X}")
-        elif choice == "4":
-            value = device.read_byte()
-            print(f"Read 1 byte: 0x{value:02X}")
-        elif choice == "5":
-            return
-        else:
-            print("Invalid choice.")
+def interactive_menu(device):
+    _LEGACY_CLI.interactive_menu(device)
 
 
 def build_pipeline_config(args: argparse.Namespace) -> PipelineConfig:
-    if args.duration_seconds <= 0:
-        raise ValueError("--duration-seconds must be greater than zero")
-
-    return PipelineConfig(
-        input_mode=args.input_mode,
-        input_device_index=args.input_device_index,
-        input_path=args.input_path,
-        output_mode=args.output_mode,
-        output_path=args.output_path,
-        output_device_index=args.output_device_index,
-        append_output=not args.overwrite_output,
-        bytes_per_read=args.bytes_per_read,
-        bytes_per_write=args.bytes_per_write,
-        input_hz=args.input_hz,
-        output_hz=args.output_hz,
-        buffer_capacity=args.buffer_capacity,
-        dll_path=args.dll,
-    )
+    return ioPipelineCli(pipeline_controller_cls=PipelineController).build_config(args)
 
 
 def run_pipeline_command(args: argparse.Namespace) -> int:
-    pipeline = None
-    try:
-        config = build_pipeline_config(args)
-        pipeline = PipelineController(config)
-        pipeline.start()
-
-        deadline = time.perf_counter() + args.duration_seconds
-        next_status_time = time.perf_counter()
-        while time.perf_counter() < deadline:
-            remaining = deadline - time.perf_counter()
-            time.sleep(min(0.1, max(remaining, 0.0)))
-            snapshot = pipeline.status_snapshot()
-            now = time.perf_counter()
-            if now >= next_status_time:
-                print(
-                    "Running...",
-                    f"buffer={snapshot['buffer_size']}/{snapshot['buffer_capacity']}",
-                    f"read={snapshot['bytes_read']}",
-                    f"written={snapshot['bytes_written']}",
-                )
-                next_status_time = now + 0.5
-            if not pipeline.is_running() and (snapshot["safe_stopped"] or snapshot["buffer_closed"]):
-                break
-
-        return_code = 0
-    except KeyboardInterrupt:
-        print("\nInterrupted.", file=sys.stderr)
-        return_code = 130
-    except (FtdiError, RuntimeError, ValueError) as exc:
-        print(f"Pipeline error: {exc}", file=sys.stderr)
-        return 1
-    finally:
-        if pipeline is not None:
-            pipeline.stop()
-
-    snapshot = pipeline.status_snapshot()
-    print("Pipeline stopped.")
-    print("Output mode:", snapshot["output_mode"])
-    print("Bytes read:", snapshot["bytes_read"])
-    print("Bytes written:", snapshot["bytes_written"])
-    print("Read throughput KB/s:", round(snapshot["read_throughput_kbps"], 3))
-    print("Write throughput KB/s:", round(snapshot["write_throughput_kbps"], 3))
-    print("Buffer size:", snapshot["buffer_size"])
-    print("Recovery safe stop:", snapshot["safe_stopped"])
-    if snapshot["recovery_messages"]:
-        print("Recovery messages:")
-        for message in snapshot["recovery_messages"]:
-            print("-", message)
-
-    if snapshot["safe_stopped"] and return_code == 0:
-        return 1
-    return return_code
+    return ioPipelineCli(pipeline_controller_cls=PipelineController).run(args)
 
 
 def compare_files(left_path: str, right_path: str, chunk_size: int = 4096) -> tuple[bool, str]:
-    left = Path(left_path)
-    right = Path(right_path)
-
-    if not left.exists():
-        raise FileNotFoundError(f"Left file not found: {left}")
-    if not right.exists():
-        raise FileNotFoundError(f"Right file not found: {right}")
-    if not left.is_file():
-        raise ValueError(f"Left path is not a file: {left}")
-    if not right.is_file():
-        raise ValueError(f"Right path is not a file: {right}")
-    if chunk_size <= 0:
-        raise ValueError("chunk_size must be greater than zero")
-
-    offset = 0
-    with left.open("rb") as left_handle, right.open("rb") as right_handle:
-        while True:
-            left_chunk = left_handle.read(chunk_size)
-            right_chunk = right_handle.read(chunk_size)
-
-            if left_chunk == right_chunk:
-                if not left_chunk:
-                    size = left.stat().st_size
-                    return True, f"Files match exactly ({size} bytes)."
-                offset += len(left_chunk)
-                continue
-
-            limit = min(len(left_chunk), len(right_chunk))
-            for index in range(limit):
-                if left_chunk[index] != right_chunk[index]:
-                    absolute_offset = offset + index
-                    return (
-                        False,
-                        "Files differ at byte offset "
-                        f"{absolute_offset}: left=0x{left_chunk[index]:02X}, right=0x{right_chunk[index]:02X}.",
-                    )
-
-            return (
-                False,
-                "Files have different lengths starting at byte offset "
-                f"{offset + limit}: left_size={left.stat().st_size}, right_size={right.stat().st_size}.",
-            )
+    return ioFileComparator().compare_files(left_path, right_path, chunk_size=chunk_size)
 
 
 def run_compare_files_command(args: argparse.Namespace) -> int:
-    try:
-        matches, message = compare_files(args.left_file, args.right_file)
-    except (FileNotFoundError, ValueError) as exc:
-        print(f"Compare error: {exc}", file=sys.stderr)
-        return 1
-
-    print(message)
-    return 0 if matches else 1
+    return ioFileComparator().run(args)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -288,6 +53,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--morse", help="Send a message as Morse code and exit")
 
     subparsers = parser.add_subparsers(dest="command")
+
     pipeline_parser = subparsers.add_parser(
         "pipeline",
         help="Run the multithreaded FTDI data acquisition pipeline",
@@ -332,44 +98,31 @@ def build_parser() -> argparse.ArgumentParser:
     compare_parser.add_argument("left_file", help="First file to compare")
     compare_parser.add_argument("right_file", help="Second file to compare")
 
+    scope_parser = subparsers.add_parser(
+        "scope-shell",
+        help="Run the professor-facing oscilloscope shell",
+    )
+    scope_parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Run the shell without opening any GUI surfaces",
+    )
+
+    scope_qt_parser = subparsers.add_parser(
+        "scope-qt",
+        help="Run the Qt oscilloscope UI",
+    )
+    scope_qt_parser.add_argument(
+        "--headless",
+        action="store_true",
+        help="Build the Qt architecture without opening a visual window",
+    )
+
     return parser
 
 
 def run_legacy_command(args: argparse.Namespace) -> int:
-    listing_client = FtdiDevice(dll_path=args.dll)
-    if args.list_devices:
-        devices = listing_client.list_devices()
-        if not devices:
-            print("No FTDI devices visible through the D2XX driver.")
-            return 0
-
-        for device in devices:
-            print(
-                f"index={device['index']} serial={device['serial']} "
-                f"description={device['description']} id=0x{device['id']:08X} "
-                f"location=0x{device['location_id']:08X} flags=0x{device['flags']:08X}"
-            )
-        return 0
-
-    with listing_client as device:
-        if args.write is not None:
-            if not 0 <= args.write <= 0xFF:
-                raise FtdiError("--write value must be between 0 and 255")
-            device.write_byte(args.write)
-            print(f"Wrote 0x{args.write:02X}")
-            return 0
-
-        if args.read:
-            value = device.read_byte()
-            print(f"Read 1 byte: 0x{value:02X}")
-            return 0
-
-        if args.morse:
-            write_message(device, args.morse)
-            return 0
-
-        interactive_menu(device)
-        return 0
+    return _LEGACY_CLI.run(args)
 
 
 def main() -> int:
@@ -381,6 +134,14 @@ def main() -> int:
             return run_pipeline_command(args)
         if args.command == "compare-files":
             return run_compare_files_command(args)
+        if args.command == "scope-shell":
+            from io_scope_shell import ioScopeShell
+
+            return ioScopeShell(headless=args.headless).run_interactive()
+        if args.command == "scope-qt":
+            from io_scope_qt import run_scope_qt
+
+            return run_scope_qt(headless=args.headless)
         return run_legacy_command(args)
     except FtdiError as exc:
         print(f"FTDI error: {exc}", file=sys.stderr)

@@ -13,11 +13,13 @@ from .io_ftdi_output_byte_stream import ioFtdiOutputByteStream
 from .io_input_scheduler import ioInputScheduler
 from .io_output_scheduler import ioOutputScheduler
 from .io_pipeline_config import ioPipelineConfig
+from .io_readable_byte_stream import ioReadableByteStream
 from .io_recovery_manager import ioRecoveryManager
 from .io_throughput_monitor import ioThroughputMonitor
 from .io_transfer_config import ioTransferConfig
 from .io_usb_read_controller import ioUsbReadController
 from .io_usb_write_controller import ioUsbWriteController
+from .io_writable_byte_stream import ioWritableByteStream
 
 
 class ioPipelineController:
@@ -25,8 +27,8 @@ class ioPipelineController:
         self,
         cfg: ioPipelineConfig,
         *,
-        input_stream: Optional[ioFtdiByteStream] = None,
-        output_stream=None,
+        input_stream: Optional[ioReadableByteStream] = None,
+        output_stream: Optional[ioWritableByteStream] = None,
     ):
         self.cfg = cfg
         self.buffer = ioDataBuffer(capacity=cfg.buffer_capacity)

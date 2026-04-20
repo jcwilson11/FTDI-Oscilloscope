@@ -1,0 +1,232 @@
+@startuml
+title ioScope Logical Class View
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "Bootstrap and CLI" {
+  class ioScopeShell
+  class ioPipelineCli
+  class ioLegacyFtdiCli
+  class ioFileComparator
+}
+
+package "Qt MVC" {
+  abstract class ioOscilloscopeView
+  class ioCompactOscilloscopeView
+  class ioDetailedOscilloscopeView
+  interface ioOscilloscopeWindow
+  class ioQtScopeWindow
+  class ioTkOscilloscopeWindow <<legacy>>
+  class ioOscilloscopeController
+  class ioOscilloscopeModel
+  class ioControlState
+  class ioViewportState
+  class ioRenderState
+  class ioScopeSettingsStore
+}
+
+package "Live Session Support" {
+  class ioLiveOscilloscopeSession
+  class ioLiveSampleHistory
+  class ioTappedReadableByteStream
+  class ioLiveFileTailByteStream
+  class ioGeneratedWaveformByteStream
+  class ioNullWritableByteStream
+}
+
+package "Signal Processing" {
+  interface ioSignalFilter
+  abstract class ioSampleMappingFilterBase
+  class ioScaleFilter
+  class ioOffsetFilter
+  class ioFilterPipeline
+}
+
+package "Signal Sources" {
+  interface ioSignalSource
+  class ioGeneratedWaveformSource
+  class ioFileWaveformSource
+  class ioFtdiWaveformSource
+  class ioWaveformGenerator
+}
+
+package "Themes" {
+  abstract class ioViewTheme
+  abstract class ioStaticThemeBase
+  class ioPortraitTheme
+  class ioLandscapeTheme
+}
+
+package "FTDI Stream Hierarchy" {
+  class ioLibraryError
+  class ioFtdiError
+  interface ioStreamLifecycle
+  interface ioReadableByteStream
+  interface ioWritableByteStream
+  abstract class ioAbstractReadableByteStream
+  abstract class ioAbstractWritableByteStream
+  abstract class ioAbstractSessionBackedByteStream
+  abstract class ioAbstractFileBackedByteStream
+  class ioFtdiByteStream
+  class ioFtdiOutputByteStream
+  class ioFileInputByteStream
+  class ioFileByteStream
+  class ioFtdiSession
+}
+
+package "Multithreaded Pipeline" {
+  class ioPipelineConfig
+  class ioAcquisitionConfig
+  class ioTransferConfig
+  class ioPipelineController
+  class ioDataBuffer
+  abstract class ioByteCountMonitorBase
+  abstract class ioThreadedWorkerBase
+  abstract class ioAbstractThreadedStreamWorker
+  class ioUsbReadController
+  class ioUsbWriteController
+  class ioRecoveryManager
+  class ioAcquisitionMonitor
+  class ioThroughputMonitor
+  abstract class ioRateSchedulerBase
+  class ioInputScheduler
+  class ioOutputScheduler
+}
+
+package "Legacy Operations" {
+  class ioBuffer <<legacy>>
+  abstract class ioBaseIoOperation <<legacy>>
+  class ioRead <<legacy>>
+  class ioWrite <<legacy>>
+}
+
+package "FTDI Adapter" {
+  class ioFtdiDevice
+  class FtdiDevice <<alias>>
+}
+
+ioScopeShell --> ioOscilloscopeController
+ioScopeShell --> ioScopeSettingsStore
+ioPipelineCli --> ioPipelineController
+ioLegacyFtdiCli --> ioFtdiDevice
+
+ioCompactOscilloscopeView --|> ioOscilloscopeView
+ioDetailedOscilloscopeView --|> ioOscilloscopeView
+ioTkOscilloscopeWindow ..> ioOscilloscopeWindow
+ioQtScopeWindow --> ioCompactOscilloscopeView
+ioQtScopeWindow --> ioDetailedOscilloscopeView
+ioQtScopeWindow --> ioOscilloscopeController
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioOscilloscopeView
+ioOscilloscopeController --> ioRenderState
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioControlState
+ioOscilloscopeModel --> ioViewportState
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+ioOscilloscopeView --> ioViewTheme
+
+ioLiveOscilloscopeSession --> ioLiveSampleHistory
+ioLiveOscilloscopeSession --> ioTappedReadableByteStream
+ioLiveOscilloscopeSession --> ioLiveFileTailByteStream
+ioLiveOscilloscopeSession --> ioGeneratedWaveformByteStream
+ioLiveOscilloscopeSession --> ioNullWritableByteStream
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioSampleMappingFilterBase --|> ioSignalFilter
+ioScaleFilter --|> ioSampleMappingFilterBase
+ioOffsetFilter --|> ioSampleMappingFilterBase
+ioFilterPipeline ..> ioSignalFilter
+
+ioGeneratedWaveformSource ..|> ioSignalSource
+ioFileWaveformSource ..|> ioSignalSource
+ioFtdiWaveformSource ..|> ioSignalSource
+ioWaveformGenerator ..> ioSignalSource
+ioFtdiWaveformSource ..> ioFtdiByteStream
+
+ioPortraitTheme --|> ioStaticThemeBase
+ioLandscapeTheme --|> ioStaticThemeBase
+ioStaticThemeBase --|> ioViewTheme
+
+ioFtdiError --|> ioLibraryError
+ioReadableByteStream --|> ioStreamLifecycle
+ioWritableByteStream --|> ioStreamLifecycle
+ioAbstractReadableByteStream ..|> ioReadableByteStream
+ioAbstractWritableByteStream ..|> ioWritableByteStream
+ioFtdiByteStream --|> ioAbstractReadableByteStream
+ioFtdiOutputByteStream --|> ioAbstractWritableByteStream
+ioFileInputByteStream --|> ioAbstractReadableByteStream
+ioFileByteStream --|> ioAbstractWritableByteStream
+ioFtdiByteStream --|> ioAbstractSessionBackedByteStream
+ioFtdiOutputByteStream --|> ioAbstractSessionBackedByteStream
+ioFileInputByteStream --|> ioAbstractFileBackedByteStream
+ioFileByteStream --|> ioAbstractFileBackedByteStream
+ioAbstractSessionBackedByteStream --> ioFtdiSession
+ioFtdiDevice --|> ioFtdiSession
+FtdiDevice ..> ioFtdiDevice : compatibility alias
+
+ioPipelineController --> ioPipelineConfig
+ioPipelineController --> ioDataBuffer
+ioPipelineController --> ioUsbReadController
+ioPipelineController --> ioUsbWriteController
+ioUsbReadController --|> ioAbstractThreadedStreamWorker
+ioUsbWriteController --|> ioAbstractThreadedStreamWorker
+ioAbstractThreadedStreamWorker --|> ioThreadedWorkerBase
+ioUsbReadController --> ioAcquisitionConfig
+ioUsbWriteController --> ioTransferConfig
+ioUsbReadController --> ioReadableByteStream
+ioUsbWriteController --> ioWritableByteStream
+ioAcquisitionMonitor --|> ioByteCountMonitorBase
+ioThroughputMonitor --|> ioByteCountMonitorBase
+ioUsbReadController --> ioAcquisitionMonitor
+ioUsbWriteController --> ioThroughputMonitor
+ioUsbReadController --> ioInputScheduler
+ioUsbWriteController --> ioOutputScheduler
+ioUsbReadController --> ioRecoveryManager
+ioUsbWriteController --> ioRecoveryManager
+ioInputScheduler --|> ioRateSchedulerBase
+ioOutputScheduler --|> ioRateSchedulerBase
+
+ioRead --|> ioBaseIoOperation
+ioWrite --|> ioBaseIoOperation
+ioBaseIoOperation --> ioBuffer
+ioBaseIoOperation ..> ioFtdiSession
+
+note right of ioOscilloscopeView
+Primary MVC rule:
+one abstract View boundary only.
+Both selectable Qt UIs inherit this class.
+end note
+
+note right of ioQtScopeWindow
+Qt host shell only.
+It switches between concrete view instances
+and is not a second View abstraction.
+end note
+
+note bottom of ioTkOscilloscopeWindow
+Legacy compatibility path only.
+It is documented honestly but is not part of
+the primary Qt submission path.
+end note
+
+note bottom of ioFtdiDevice
+Canonical professor-facing FTDI adapter.
+The older FtdiDevice name remains as a thin
+compatibility alias only.
+end note
+
+note bottom of ioDataBuffer
+Current required implementation:
+one bounded thread-safe circular buffer shared by
+the read worker and the write worker.
+The separate two-buffer extra-credit design is
+not implemented in this branch.
+end note
+
+note right of ioLiveOscilloscopeSession
+Live acquisition stays outside the View layer.
+The controller owns the session and the session
+owns the threaded transfer pipeline and history.
+end note
+@enduml

@@ -1,0 +1,62 @@
+@startuml
+title ioScope Process View
+skinparam shadowing false
+
+rectangle "Qt UI Thread" {
+  component "ioQtScopeWindow" as qtWindow
+  component "ioCompactOscilloscopeView" as compactView
+  component "ioDetailedOscilloscopeView" as detailedView
+  component "ioOscilloscopeController" as controller
+  component "ioOscilloscopeModel" as model
+  component "ioLiveOscilloscopeSession" as liveSession
+  component "ioPipelineController" as pipelineController
+  component "ioFilterPipeline" as filterPipeline
+  component "ioWaveformGenerator" as generator
+}
+
+rectangle "FTDI Read Thread" {
+  component "ioUsbReadController" as readWorker
+  component "ioReadableByteStream" as readable
+}
+
+rectangle "FTDI Write Thread" {
+  component "ioUsbWriteController" as writeWorker
+  component "ioWritableByteStream" as writable
+}
+
+queue "ioDataBuffer\nCircular Buffer" as buffer
+
+qtWindow --> controller : view selection / input source
+controller --> model : update control state
+model --> generator : acquire raw samples
+model --> filterPipeline : scale + offset pipeline
+controller --> liveSession : start / stop / refresh live mode
+liveSession --> pipelineController : configure background transfer
+controller --> compactView : render(state)
+controller --> detailedView : render(state)
+
+readWorker --> readable : read_bytes()
+readWorker --> buffer : push(bytes)
+writeWorker --> buffer : pop(bytes)
+writeWorker --> writable : write_bytes()
+
+note right of buffer
+Required concurrent handoff:
+one read thread and one write thread
+share the bounded circular buffer.
+end note
+
+note left of controller
+controller, model, waveform generation,
+filtering, live-session coordination,
+and rendering all run on the
+Qt UI thread.
+end note
+
+note right of qtWindow
+The window hosts both concrete Qt view instances.
+It selects visibility but does not act as a
+second MVC View abstraction.
+end note
+
+@enduml

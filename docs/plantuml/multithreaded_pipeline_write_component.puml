@@ -1,0 +1,64 @@
+@startuml
+title Multithreaded Data Acquisition Pipeline - Write Side Component Diagram
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "CLI User" as User
+component "Pipeline CLI\n(command-line executable)" as CLI
+component "ioPipelineController" as Controller
+component "ioUsbWriteController\n<<write worker>>" as WriteWorker
+queue "ioDataBuffer\n<<circular buffer>>" as CircularBuffer
+
+interface "ioWritableByteStream\n<<output sink protocol>>" as OutputSink
+component "ioFileByteStream\n<<file sink>>" as FileSink
+component "ioFtdiOutputByteStream\n<<FTDI sink>>" as FtdiSink
+
+component "OutputSession : ioFtdiSession\n<<existing>>" as OutputSession
+node "FTDI Output Device" as OutputDevice
+file "Output File" as OutputFile
+file "Reference File" as ReferenceFile
+
+User --> CLI : run pipeline or compare-files
+CLI --> Controller : configure / create / start / stop
+CLI --> OutputFile : compare-files left input
+CLI --> ReferenceFile : compare-files right input
+
+Controller --> WriteWorker : manage thread lifecycle
+Controller --> CircularBuffer : create / close
+Controller --> OutputSink : select implementation
+
+WriteWorker --> CircularBuffer : pop byte chunks
+WriteWorker --> OutputSink : write bytes
+
+OutputSink --> FileSink : file mode
+OutputSink --> FtdiSink : FTDI mode
+FileSink --> OutputFile : append or overwrite bytes
+FtdiSink --> OutputSession : FTDI session calls
+OutputSession --> OutputDevice : FT_Write operations
+
+note bottom of CircularBuffer
+Primary producer-consumer handoff.
+Implemented as ioDataBuffer with
+bounded ring storage and blocking
+push and pop synchronization.
+end note
+
+note right of WriteWorker
+WriteWorker.
+The writer keeps the same drain-and-write
+role regardless of selected destination.
+end note
+
+note bottom of CLI
+The repo now includes a compare-files
+subcommand for byte-for-byte validation
+of demo and reference binaries.
+end note
+
+note bottom of OutputSink
+OutputSink.
+ioFileByteStream supports append and
+overwrite workflows for demos.
+end note
+@enduml

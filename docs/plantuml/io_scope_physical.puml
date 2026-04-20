@@ -1,0 +1,38 @@
+@startuml
+title ioScope Physical View
+skinparam shadowing false
+
+node "Windows Host" {
+  artifact "Python Runtime" as python
+  artifact "controller.py" as controller
+  artifact "oscilloscope package" as osc
+  artifact "ioLibrary package" as lib
+  artifact "PySide6" as pyside
+  artifact "pyqtgraph" as pyqtgraph
+  artifact "ftd2xx.dll / D2XX" as d2xx
+  database "io_scope_settings.json" as settings
+  file "sample input file" as inputFile
+}
+
+node "Display" {
+  artifact "Qt window" as ui
+}
+
+node "USB Bus" {
+  artifact "FTDI read device" as ftdiRead
+  artifact "FTDI write device\n<<optional single-buffer mode>>" as ftdiWrite
+}
+
+python -- controller
+controller -- osc 
+controller -- lib
+osc -- pyside
+osc -- pyqtgraph
+lib -- d2xx
+osc -- settings
+osc -- inputFile
+osc -- ui
+lib -- ftdiRead
+lib -- ftdiWrite
+
+@enduml

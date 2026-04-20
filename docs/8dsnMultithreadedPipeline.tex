@@ -1,0 +1,266 @@
+\section{Pipeline Architecture \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Pipeline Architecture}
+\label{Section::Pipeline Architecture}
+
+The multithreaded pipeline separates data acquisition and data output into concurrent activities. A read thread acquires bytes from a selected input source, places them into a shared circular buffer, and a write thread removes the buffered data and sends it to the selected output destination. This producer-consumer design improves modularity and allows temporary timing differences between reading and writing without immediately interrupting the transfer process. Figures~\ref{fig:multithreaded_pipeline_read_component} and \ref{fig:multithreaded_pipeline_write_component} introduce the separated read-side and write-side subsystem views, while Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class} show the separated class structures used in the submitted Python implementation.
+
+In the current repository, the runtime path can be either input file or FTDI input device to \texttt{ioUsbReadController} to \texttt{ioDataBuffer} to \texttt{ioUsbWriteController} to either \texttt{ioFileByteStream} or \texttt{ioFtdiOutputByteStream}. The architectural design is coordinated by \texttt{ioPipelineController}, which is responsible for constructing the shared objects, selecting the input and output strategies, starting the worker threads, and coordinating orderly shutdown. Using the concrete repository class names directly in this chapter keeps the UML, the prose explanation, and the source code aligned with one another, especially across Figures~\ref{fig:multithreaded_pipeline_read_component}, \ref{fig:multithreaded_pipeline_write_component}, \ref{fig:multithreaded_pipeline_read_class}, \ref{fig:multithreaded_pipeline_write_class}, and \ref{fig:multithreaded_pipeline_sequence}.
+
+\subsection{Architectural Structure \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Architectural Structure}
+\label{Section::Architectural Structure}
+
+The design has four major architectural elements. First, \texttt{ioPipelineController} acts as the coordinator and owns the worker lifecycle for a single run of the pipeline. Second, \texttt{ioUsbReadController} acts as the producer and continuously acquires data from the selected source. Third, \texttt{ioDataBuffer} acts as the bounded circular buffer and synchronization boundary between the workers. Fourth, \texttt{ioUsbWriteController} acts as the consumer and forwards the buffered bytes to a selected output sink. These four elements are the backbone of the separated component-level views shown in Figures~\ref{fig:multithreaded_pipeline_read_component} and \ref{fig:multithreaded_pipeline_write_component}.
+
+The input side is represented by the \texttt{ioReadableByteStream} protocol. This keeps the producer logic independent from the source type. \texttt{ioReadableByteStream} extends the shared \texttt{ioStreamLifecycle} protocol so that lifecycle concerns are modeled once while direction-specific byte access stays separate. \texttt{ioFileInputByteStream} provides the file-based demonstration and round-trip validation path used in the current repository, while \texttt{ioFtdiByteStream} provides the FTDI hardware acquisition path. Both concrete stream types now inherit lifecycle behavior from abstract file-backed or session-backed stream base classes. The output side is represented by the \texttt{ioWritableByteStream} protocol. \texttt{ioFileByteStream} provides the primary demonstration path because file output is easy to verify directly, and \texttt{ioFtdiOutputByteStream} provides the alternate FTDI-to-FTDI path required by the assignment design. The realization and inheritance relationships for those source and sink types can be seen directly in Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class}.
+
+\subsection{Relationships and Ownership \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Relationships and Ownership}
+\label{Section::Relationships and Ownership}
+
+\texttt{ioPipelineController} has a composition relationship to \texttt{ioUsbReadController}, \texttt{ioUsbWriteController}, and \texttt{ioDataBuffer}. The controller creates these objects, coordinates their startup and shutdown, and they do not have an independent architectural lifetime outside a single pipeline run. This makes the controller the natural owner for the threads and the shared synchronization object, which is shown explicitly in Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class}. \\
+
+\texttt{ioPipelineController} has a 1-to-1 aggregation relationship to one selected \texttt{ioReadableByteStream} implementation and one selected \texttt{ioWritableByteStream} implementation. The source and sink are created for use by the pipeline, but they remain replaceable collaborators rather than tightly embedded subparts of the controller. This is why the read-side algorithm does not need source-specific branching beyond source selection during configuration, and the write-side algorithm does not need destination-specific branching beyond sink selection during configuration. Those open-diamond relationships are emphasized separately in Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class}. \\
+
+\texttt{ioUsbReadController} and \texttt{ioUsbWriteController} each have an ordinary shared association with \texttt{ioDataBuffer}. Both workers depend on the same buffer instance concurrently, but neither worker owns its lifetime. Keeping ownership in the controller and access in the workers centralizes the concurrency contract and makes shutdown behavior easier to reason about. This shared association is visible structurally in Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class} and behaviorally in Figure~\ref{fig:multithreaded_pipeline_sequence}. \\
+
+\texttt{ioFtdiByteStream} and \texttt{ioFtdiOutputByteStream} each compose an \texttt{ioFtdiSession}. The stream wrappers create, use, and close the FTDI session as part of their own lifecycle through the shared \texttt{ioAbstractSessionBackedByteStream} base class, so the driver-facing adapter does not escape as an independently managed architectural object. This ownership boundary is shown on the input side in Figure~\ref{fig:multithreaded_pipeline_read_class} and on the output side in Figure~\ref{fig:multithreaded_pipeline_write_class}.
+
+\subsection{Data Flow \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Data Flow}
+\label{Section::Data Flow}
+
+At startup, the \texttt{controller.py pipeline} command parses the selected input mode, selected output mode, file paths or device indices, append-versus-overwrite behavior, chunk size, rate configuration, duration, and buffer capacity. \texttt{ioPipelineController} creates the shared \texttt{ioDataBuffer}, constructs the selected input source and output sink, starts \texttt{ioUsbWriteController}, and then starts \texttt{ioUsbReadController}. Starting the consumer first is intentional because it allows the write side to be ready before the producer begins filling the buffer. This startup order is shown step-by-step in Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+During steady-state execution, \texttt{ioUsbReadController} repeatedly reads a configured number of bytes from the selected input source and pushes those bytes into \texttt{ioDataBuffer}. \texttt{ioUsbWriteController} repeatedly pops available bytes from the same buffer and writes them to the selected output sink. Because the two workers execute independently, a temporary mismatch between the acquisition rate and the output rate does not immediately interrupt transfer as long as the mismatch stays within the bounded capacity of the circular buffer. In file-input mode, end-of-file is treated as a normal completion condition: the reader closes the shared buffer so the writer can drain any remaining data and exit cleanly. The producer-consumer handoff is documented structurally in Figures~\ref{fig:multithreaded_pipeline_read_component} and \ref{fig:multithreaded_pipeline_write_component} and behaviorally in Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+\section{UML Diagrams \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!UML Diagrams}
+\label{Section::UML Diagrams}
+
+The UML diagrams in this chapter are intended to document the multithreaded pipeline from several complementary viewpoints rather than relying on a single picture. Together they show the major software components involved, the relationship between the read thread, circular buffer, and write thread, the flow of data through the system, and the responsibilities of the main classes. The chapter now references these figures throughout the narrative so that the diagrams support the explanation of architecture rather than appearing only as standalone illustrations.
+
+\begin{figure}[!htbp]
+  \centering
+  \IfFileExists{svg/Multithreaded Data Acquisition Pipeline - Read Side.svg}{
+    \includesvg[width=1.0\linewidth]{svg/Multithreaded Data Acquisition Pipeline - Read Side.svg}
+  }{
+    \fbox{\parbox{0.9\linewidth}{\centering Read-side class diagram placeholder. Render from \texttt{docs/plantuml/multithreaded\_pipeline\_read\_class.puml}.}}
+  }
+  \caption{Multithreaded Data Acquisition Pipeline - Read-Side Class View}
+  \label{fig:multithreaded_pipeline_read_class}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \centering
+  \IfFileExists{svg/Multithreaded Data Acquisition Pipeline - Write Side.svg}{
+    \includesvg[width=1.0\linewidth]{svg/Multithreaded Data Acquisition Pipeline - Write Side.svg}
+  }{
+    \fbox{\parbox{0.9\linewidth}{\centering Write-side class diagram placeholder. Render from \texttt{docs/plantuml/multithreaded\_pipeline\_write\_class.puml}.}}
+  }
+  \caption{Multithreaded Data Acquisition Pipeline - Write-Side Class View}
+  \label{fig:multithreaded_pipeline_write_class}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \centering
+  \IfFileExists{svg/Multithreaded Data Acquisition Pipeline - Read Side Component Diagram.svg}{
+    \includesvg[width=1.0\linewidth]{svg/Multithreaded Data Acquisition Pipeline - Read Side Component Diagram.svg}
+  }{
+    \fbox{\parbox{0.9\linewidth}{\centering Read-side component diagram placeholder. Render from \texttt{docs/plantuml/multithreaded\_pipeline\_read\_component.puml}.}}
+  }
+  \caption{Multithreaded Data Acquisition Pipeline - Read-Side Component View}
+  \label{fig:multithreaded_pipeline_read_component}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \centering
+  \IfFileExists{svg/Multithreaded Data Acquisition Pipeline - Write Side Component Diagram.svg}{
+    \includesvg[width=1.0\linewidth]{svg/Multithreaded Data Acquisition Pipeline - Write Side Component Diagram.svg}
+  }{
+    \fbox{\parbox{0.9\linewidth}{\centering Write-side component diagram placeholder. Render from \texttt{docs/plantuml/multithreaded\_pipeline\_write\_component.puml}.}}
+  }
+  \caption{Multithreaded Data Acquisition Pipeline - Write-Side Component View}
+  \label{fig:multithreaded_pipeline_write_component}
+\end{figure}
+
+\begin{figure}[!htbp]
+  \centering
+  \includesvg[width=1.0\linewidth]{svg/Multithreaded Data Acquisition Pipeline - Sequence Diagram.svg}
+  \caption{Multithreaded Data Acquisition Pipeline - Sequence Diagram}
+  \label{fig:multithreaded_pipeline_sequence}
+\end{figure}
+
+\subsection{Diagram Interpretation \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Diagram Interpretation}
+\label{Section::Diagram Interpretation}
+
+Figure~\ref{fig:multithreaded_pipeline_read_component} shows the major read-side software components and the top-level interaction between the CLI, controller, read worker, circular buffer, and selected input strategy. Figure~\ref{fig:multithreaded_pipeline_write_component} shows the corresponding write-side software components, including the controller, write worker, circular buffer, selected output strategy, and validation files. Figure~\ref{fig:multithreaded_pipeline_read_class} shows the class-level structure of the read side. It highlights that \texttt{ioPipelineController} owns the producer-side objects and that \texttt{ioFileInputByteStream} and \texttt{ioFtdiByteStream} realize the \texttt{ioReadableByteStream} input contract. Figure~\ref{fig:multithreaded_pipeline_write_class} shows the class-level structure of the write side, including \texttt{ioUsbWriteController}, \texttt{ioDataBuffer}, and the \texttt{ioWritableByteStream} contract realized by \texttt{ioFileByteStream} and \texttt{ioFtdiOutputByteStream}. Figure~\ref{fig:multithreaded_pipeline_sequence} shows the startup order, steady-state producer-consumer interaction, file-input end-of-file behavior, and shutdown sequence.
+
+Using these diagrams together strengthens the architecture document because each one answers a different design question. The read-side component view explains input-facing subsystem boundaries, the write-side component view explains output-facing subsystem boundaries, the read-side class view explains producer dependencies and source strategy selection, the write-side class view explains consumer dependencies and sink strategy selection, and the sequence diagram explains collaboration over time.
+
+
+\subsection{Documentation Quality \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Documentation Quality}
+\label{Section::Documentation Quality}
+
+The diagrams use the concrete repository class names as the primary labels so that the report can be checked directly against the Python source code. At the same time, assignment roles such as read worker, circular buffer, write worker, input source, and output sink are preserved in stereotypes and explanatory text. This combination makes the documentation useful both as a design explanation and as a traceable description of the submitted implementation.
+
+
+\section{Multithreaded Read Implementation \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Multithreaded Read Implementation}
+\label{Section::Multithreaded Read Implementation}
+
+The read side of the pipeline is responsible for continuously acquiring data from the selected input source and placing that data into the shared circular buffer for later processing by the write side. The read mechanism operates as a dedicated thread so that data collection can continue independently from output operations. In the overall architecture, the read worker appears as the producer in Figure~\ref{fig:multithreaded_pipeline_read_component} and as the left-side worker lifeline in Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+\subsection{Read-Side Responsibilities \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Read-Side Responsibilities}
+\label{Section::Read-Side Responsibilities}
+
+The concrete read worker in the repository is \texttt{ioUsbReadController}. It depends on six collaborators: \texttt{ioReadableByteStream} for abstract input access, \texttt{ioAcquisitionConfig} for rate and chunk-size settings, \texttt{ioDataBuffer} for producer-consumer transfer, \texttt{ioAcquisitionMonitor} for statistics, \texttt{ioRecoveryManager} for failure reporting and safe-stop behavior, and \texttt{ioInputScheduler} for pacing. The selected input strategy is either \texttt{ioFileInputByteStream} or \texttt{ioFtdiByteStream}. \texttt{ioUsbReadController} now also inherits its common thread lifecycle behavior from \texttt{ioThreadedWorkerBase}, while keeping only the read-side loop logic in the concrete class. This decomposition is important architecturally because it keeps source access, buffering, monitoring, timing, and recovery responsibilities separate rather than concentrating them in one large thread class. Those dependencies are shown in the read-side class view in Figure~\ref{fig:multithreaded_pipeline_read_class}.
+
+\subsection{Execution Behavior \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Execution Behavior}
+\label{Section::Execution Behavior}
+
+When \texttt{start()} is called, the read side opens the selected input stream if it is not already connected and launches a dedicated thread that executes \texttt{read\_loop()}. Inside that loop, the controller first verifies that the stream is still connected. If the input connection is healthy, it requests \texttt{bytes\_per\_read} bytes from the stream, pushes any acquired data into the shared \texttt{ioDataBuffer}, records the number of bytes read, and then uses \texttt{ioInputScheduler} to enforce the configured input frequency. In file-input mode, a zero-byte read combined with source exhaustion closes the shared buffer and ends the producer cleanly. This exact order is visible in the reader lifeline of Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+This structure cleanly matches the assignment requirement for a multithreaded read mechanism. The thread is not simply a helper around a single blocking call. Instead, it acts as a persistent producer that repeatedly acquires byte chunks, coordinates with the circular buffer, and continues operating until the pipeline is stopped, the selected file source is exhausted, or a failure occurs. Figure~\ref{fig:multithreaded_pipeline_sequence} is especially useful here because it shows the reader continuing through repeated loop iterations rather than performing only a single transfer.
+
+\subsection{Read-Side Error Handling \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Read-Side Error Handling}
+\label{Section::Read-Side Error Handling}
+
+If the selected input stream becomes unavailable or an exception occurs during reading, the read worker does not silently fail. Instead, it reports the problem through \texttt{ioRecoveryManager}, transitions the system toward a safe-stop condition, and closes the buffer so that the consumer can eventually drain any remaining bytes and terminate predictably. This behavior is important in a real-time pipeline because abrupt reader failure can otherwise leave the consumer blocked indefinitely or leave buffered data in an undefined state. Normal file-input exhaustion is handled separately as a clean completion path rather than as a failure. The shutdown portion of Figure~\ref{fig:multithreaded_pipeline_sequence} makes that reader-to-buffer-to-writer termination path easier to trace.
+
+\section{Circular Buffer Design \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Circular Buffer Design}
+\label{Section::Circular Buffer Design}
+
+The circular buffer acts as the shared data structure between the producer and consumer threads. Its purpose is to safely decouple reading from writing so that temporary timing differences between the two threads do not immediately interrupt data flow. The buffer stores incoming bytes from the read thread until the write thread is ready to remove and transmit them. In the chapter diagrams, \texttt{ioDataBuffer} is the central handoff point in Figures~\ref{fig:multithreaded_pipeline_read_component}, \ref{fig:multithreaded_pipeline_write_component}, \ref{fig:multithreaded_pipeline_read_class}, \ref{fig:multithreaded_pipeline_write_class}, and \ref{fig:multithreaded_pipeline_sequence}.
+
+\subsection{Thread-Safe Buffer Semantics \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Thread-Safe Buffer Semantics}
+\label{Section::Thread-Safe Buffer Semantics}
+
+In the submitted implementation, this role is handled by \texttt{ioDataBuffer} in \texttt{ioLibrary.data\_buffer}. The buffer has a fixed capacity, tracks a producer position and a consumer position, and uses bounded ring storage to preserve FIFO ordering while reusing the same memory region. This is the defining structural property that makes the class a circular buffer rather than a simple queue wrapper. The class members that support this design are shown directly in Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class}.
+
+The buffer provides blocking \texttt{push()} and \texttt{pop()} operations. When the buffer is full, the producer waits on a \texttt{not\_full} condition until space becomes available. When the buffer is empty, the consumer waits on a \texttt{not\_empty} condition until data arrives or the buffer is closed. This synchronization design allows the reader and writer to run independently without corrupting shared state. Figure~\ref{fig:multithreaded_pipeline_sequence} makes those full-buffer and empty-buffer wait conditions explicit.
+
+\subsection{Integration with the Producer-Consumer Pipeline \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Integration with the Producer-Consumer Pipeline}
+\label{Section::Integration with the Producer-Consumer Pipeline}
+
+\texttt{ioDataBuffer} is not owned by either worker thread. Instead, it is created by \texttt{ioPipelineController} and shared with both workers through ordinary association. This architectural choice is important because the buffer is the synchronization boundary between the read side and the write side. By keeping lifetime control in the controller, shutdown behavior stays explicit and there is no confusion over which thread is responsible for terminating the shared data path. Figures~\ref{fig:multithreaded_pipeline_read_class} and \ref{fig:multithreaded_pipeline_write_class} show that ownership boundary, while Figures~\ref{fig:multithreaded_pipeline_read_component} and \ref{fig:multithreaded_pipeline_write_component} show the same object from the broader subsystem perspective.
+
+\subsection{Close and Drain Behavior \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Close and Drain Behavior}
+\label{Section::Close and Drain Behavior}
+
+The buffer also maintains a closed state. This is a critical detail for a high-quality multithreaded design because safe shutdown is not only about stopping threads; it is also about releasing wait conditions and preserving already-buffered data. Once the controller closes the buffer, no further producer writes are accepted, blocked producers are released, and the consumer can continue draining remaining bytes until the buffer becomes empty. In file-input mode, source exhaustion also closes the buffer so that the writer can finish naturally after the last buffered bytes are consumed. That close-and-drain behavior is visible in the final phase of Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+\section{Multithreaded Write Implementation \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Multithreaded Write Implementation}
+\label{Section::Multithreaded Write Implementation}
+
+The multithreaded write mechanism is implemented by \texttt{ioUsbWriteController}, which runs as a dedicated consumer thread in the pipeline. Its responsibility is to remove byte blocks from the shared \texttt{ioDataBuffer} and write them to the output destination. In this implementation, the output destination is represented primarily by \texttt{ioFileByteStream}, which allows the pipeline to be demonstrated through file output while preserving the same structure for future FTDI-to-FTDI transfer. Figure~\ref{fig:multithreaded_pipeline_write_class} focuses attention on the classes most relevant to the write-side implementation.
+
+\subsection{Write-Side Responsibilities \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Write-Side Responsibilities}
+\label{Section::Write-Side Responsibilities}
+
+The write side depends on \texttt{ioTransferConfig} for rate and chunk-size configuration, \texttt{ioDataBuffer} for buffered input, \texttt{ioThroughputMonitor} for output statistics, \texttt{ioRecoveryManager} for safe-stop signaling, and \texttt{ioOutputScheduler} for pacing the write loop. \texttt{ioWritableByteStream} isolates the destination-specific details behind a common contract so that the thread algorithm remains unchanged whether the destination is a file or another FTDI device. \texttt{ioUsbWriteController} inherits its shared thread lifecycle from \texttt{ioThreadedWorkerBase}, and \texttt{ioFileByteStream} supports append or overwrite behavior according to the command-line configuration while inheriting the shared file-handle lifecycle from \texttt{ioAbstractFileBackedByteStream}. Those collaborators are the central relationships highlighted again in Figure~\ref{fig:multithreaded_pipeline_write_class}.
+
+Figure~\ref{fig:multithreaded_pipeline_write_class} shows the UML class view most relevant to the multithreaded write portion of the pipeline. The write-side focus centers on \texttt{ioUsbWriteController}, \texttt{ioTransferConfig}, \texttt{ioDataBuffer}, \texttt{ioThroughputMonitor}, \texttt{ioRecoveryManager}, \texttt{ioOutputScheduler}, and \texttt{ioFileByteStream}.
+
+\subsection{Execution Behavior \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Write-Side Execution Behavior}
+\label{Section::Write-Side Execution Behavior}
+
+The write thread begins execution when \texttt{start()} is called. Once started, it continuously checks whether the output stream is connected, retrieves up to the configured \texttt{bytes\_per\_write} value from the shared buffer, writes the data to the output stream, records the number of bytes written using \texttt{ioThroughputMonitor}, and then waits according to the configured output rate enforced by \texttt{ioOutputScheduler}. This loop continues until the controller is stopped or a failure occurs. The consumer-side loop is shown in the writer lifeline of Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+An important detail in the submitted implementation is that the writer handles partial sink writes by retrying until the entire current chunk has been flushed. This is stronger than a minimal demonstration because it means the architecture does not assume that every sink consumes the entire requested block in one call. That design choice makes the write side more robust and more transferable to future destinations. The sink abstraction shown in Figure~\ref{fig:multithreaded_pipeline_write_class} explains why that robustness applies to both file output and FTDI output.
+
+\subsection{Shutdown and Failure Handling \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Shutdown and Failure Handling}
+\label{Section::Shutdown and Failure Handling}
+
+The design keeps the write side separate from the read side, which improves modularity and supports the producer-consumer structure required for the multithreaded data acquisition pipeline. If an output failure occurs, \texttt{ioRecoveryManager} is responsible for notifying the user and transitioning the system to a safe-stop state. This helps ensure that the pipeline handles communication errors gracefully while maintaining a clear separation of concerns among buffering, scheduling, monitoring, and output operations. Figure~\ref{fig:multithreaded_pipeline_sequence} shows that the writer remains part of the coordinated shutdown path rather than failing independently in an undocumented way.
+
+During normal shutdown, the writer is allowed to drain any remaining buffered bytes before the thread exits. The selected output stream is then closed as part of the writer's own finalization path rather than being closed externally by the controller. This is a good architectural boundary because the class that owns the write-side resource lifecycle is also the class that closes it. That finalization path appears at the end of Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+\section{Command-Line Integration \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Command-Line Integration}
+\label{Section::Command-Line Integration}
+
+The command-line executable demonstrates the complete pipeline behavior by creating the shared buffer, selecting the input and output strategies, starting the worker threads, running the pipeline for a requested duration, and printing a final runtime summary. The same top-level executable also includes a \texttt{compare-files} command for byte-for-byte verification of generated output against an expected file. This provides a complete end-to-end demonstration of the pipeline behavior and shows that the read side, circular buffer, and write side operate together as an integrated multithreaded system with an accompanying validation workflow. In the diagram set, this entry point is represented as the external driver in Figures~\ref{fig:multithreaded_pipeline_read_component} and \ref{fig:multithreaded_pipeline_write_component} and as the actor that initiates startup and shutdown in Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+\subsection{Pipeline Entry Point \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Pipeline Entry Point}
+\label{Section::Pipeline Entry Point}
+
+The pipeline is executed through the \texttt{controller.py pipeline} command. The command-line interface accepts the input mode, FTDI source device index or input file path, output mode, output file path or destination FTDI device index, overwrite-versus-append behavior, read and write chunk sizes, input and output frequencies, buffer capacity, and total duration. Those parameters are validated before the run begins and then packaged into \texttt{PipelineConfig}, which is the public compatibility export for the canonical \texttt{ioPipelineConfig} class. The resulting configuration object is passed to \texttt{PipelineController}, which is the public compatibility export for the canonical \texttt{ioPipelineController} class. This is the same configuration handoff shown at the start of Figures~\ref{fig:multithreaded_pipeline_read_component}, \ref{fig:multithreaded_pipeline_write_component}, and \ref{fig:multithreaded_pipeline_sequence}.
+
+\subsection{Demonstration Path \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Demonstration Path}
+\label{Section::Demonstration Path}
+
+For the primary demonstration path used in the current repository, the pipeline reads data from \texttt{demo\_input.bin}, transfers the byte stream through the bounded circular buffer, and writes the result to \texttt{demo\_output.bin}. This file-to-file path is especially useful for grading because end-to-end transfer can be verified directly after the program terminates by running \texttt{controller.py compare-files}. The same command-line structure also supports an FTDI-to-file path and an FTDI-to-FTDI path by selecting \texttt{ftdi} as the input mode or output mode and specifying the corresponding device indices. The branch between file input and FTDI input, and the branch between file output and FTDI output, are visible in Figures~\ref{fig:multithreaded_pipeline_read_component}, \ref{fig:multithreaded_pipeline_write_component}, and \ref{fig:multithreaded_pipeline_sequence}.
+
+\subsection{Startup, Monitoring, and Shutdown \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Startup, Monitoring, and Shutdown}
+\label{Section::Startup, Monitoring, and Shutdown}
+
+After configuration, \texttt{ioPipelineController} constructs the shared \texttt{ioDataBuffer}, creates the appropriate input source and output sink, starts the write worker, and then starts the read worker. While the pipeline runs, the controller can report runtime information such as input mode, output mode, bytes read, bytes written, throughput, buffer occupancy, and safe-stop status. When the requested duration expires, the controller stops the reader, closes the buffer, requests the writer to stop, and prints a final status summary. If the selected input source is a file and the end of the file is reached earlier, the reader closes the buffer and the writer drains the remaining data naturally. This sequence demonstrates that the command-line layer is not a trivial wrapper around one class; it is the integration layer that exercises the full pipeline architecture. The complete startup-monitoring-shutdown pattern is captured most clearly in Figure~\ref{fig:multithreaded_pipeline_sequence}.
+
+\section{Source Code \& Demo \\
+\small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
+\index{Section!Source Code and Demo}
+\label{Section::Source Code and Demo}
+
+The sample application for this chapter is the combination of the \texttt{controller.py pipeline} command and the \texttt{controller.py compare-files} command. Together they demonstrate the complete multithreaded data acquisition pipeline and its validation workflow without placing FTDI-specific driver calls in the application layer. In the submitted Python implementation, the command-line entry point imports \texttt{PipelineConfig} and \texttt{PipelineController} from \texttt{ioLibrary}, validates the command-line arguments in \texttt{build\_pipeline\_config()}, and then constructs one \texttt{PipelineController} object for the requested run. Those public names resolve to the current repository classes \texttt{ioPipelineConfig} and \texttt{ioPipelineController}.
+
+Inside \texttt{ioPipelineController}, the program creates one shared \texttt{ioDataBuffer} object, one \texttt{ioUsbReadController}, and one \texttt{ioUsbWriteController}. The same buffer instance is injected into both worker controllers, which matches the shared association shown in Figures~\ref{fig:multithreaded_pipeline_read_class}, \ref{fig:multithreaded_pipeline_write_class}, and \ref{fig:multithreaded_pipeline_sequence}. The controller also constructs one selected \texttt{ioReadableByteStream} implementation, which is either \texttt{ioFileInputByteStream} or \texttt{ioFtdiByteStream}, and one selected \texttt{ioWritableByteStream} implementation, which is either \texttt{ioFileByteStream} or \texttt{ioFtdiOutputByteStream}.
+
+For the main demonstration path used in this chapter, the application runs \texttt{controller.py pipeline} in file-input and file-output mode, using \texttt{demo\_input.bin} as the source and \texttt{demo\_output.bin} as the destination. Once configured, \texttt{ioPipelineController.start()} starts the writer thread first and then the reader thread, which is the startup order documented in Figure~\ref{fig:multithreaded_pipeline_sequence}. During execution, the main program periodically checks \texttt{status\_snapshot()} so that it can stop cleanly after the requested duration and print the final runtime summary. After the run, the repository uses \texttt{compare-files} to verify that the produced output matches the expected bytes.
+
+The demo verifies the key multithreaded pipeline requirements from the assignment:
+\begin{itemize}
+    \item A dedicated read thread continuously acquires bytes from the selected input source.
+    \item The acquired bytes are transferred through the shared bounded circular buffer implemented by \texttt{ioDataBuffer}.
+    \item A dedicated write thread removes buffered bytes and writes them to the selected destination.
+    \item The command-line application is responsible only for configuration, startup, monitoring, clean shutdown, and optional output validation.
+    \item FTDI driver access remains encapsulated inside \texttt{ioLibrary} abstractions rather than the top-level application logic.
+\end{itemize}
+
+The execution of the program, including the file-to-file demonstration path, the alternate FTDI-supported path, and the walkthrough of how the controller code coordinates the worker threads, is shown in the accompanying YouTube demo submitted with the report:
+
+\begin{quote}
+\texttt{[Insert submitted YouTube demo link here]}
+\end{quote}
+
+The project source code is available in the GitHub repository:
+\url{https://github.com/jcwilson11/FTDI-Oscilloscope}

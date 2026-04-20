@@ -1,0 +1,23 @@
+@startuml
+title ioScope Control Update Sequence
+autonumber
+
+actor User
+participant "ioQtScopeWindow" as Window
+participant "ioOscilloscopeController" as Controller
+participant "ioOscilloscopeModel" as Model
+participant "ioFilterPipeline" as Pipeline
+participant "ioCompactOscilloscopeView" as Compact
+participant "ioDetailedOscilloscopeView" as Detailed
+
+User -> Window : adjust scale / offset
+Window -> Controller : setScale(...), setOffset(...)
+Controller -> Model : update control state
+Model -> Pipeline : rebuild control pipeline
+Model -> Pipeline : setFilters(scale, offset)
+Model -> Pipeline : process(raw signal)
+Pipeline --> Model : processed signal
+Controller -> Compact : render(ioRenderState)
+Controller -> Detailed : render(ioRenderState)
+Window -> Window : keep one concrete view visible
+@enduml

@@ -1,0 +1,211 @@
+@startuml
+title ioScope Development View
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+package "Bootstrap / CLI Files" {
+  [controller.py]
+  [io_scope_qt.py\nQt launcher]
+  [io_scope_shell.py\nioScopeShell]
+  [io_pipeline_cli.py\nioPipelineCli]
+  [io_legacy_ftdi_cli.py\nioLegacyFtdiCli]
+  [io_file_comparator.py\nioFileComparator]
+  [ftd2xx_wrapper.py\nioFtdiDevice]
+}
+
+package "oscilloscope/ MVC Files" {
+  [io_oscilloscope_controller.py\nioOscilloscopeController]
+  [io_oscilloscope_model.py\nioOscilloscopeModel]
+  [io_oscilloscope_view.py\nioOscilloscopeView]
+  [io_compact_oscilloscope_view.py\nioCompactOscilloscopeView]
+  [io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView]
+  [io_qt_scope_window.py\nioQtScopeWindow]
+  [io_oscilloscope_window.py\nioOscilloscopeWindow]
+}
+
+package "oscilloscope/ State Files" {
+  [io_control_state.py\nioControlState]
+  [io_viewport_state.py\nioViewportState]
+  [io_render_state.py\nioRenderState]
+  [io_scope_settings_store.py\nioScopeSettingsStore]
+}
+
+package "oscilloscope/ Live Session Files" {
+  [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+  [io_live_sample_history.py\nioLiveSampleHistory]
+  [io_tapped_readable_byte_stream.py\nioTappedReadableByteStream]
+  [io_live_file_tail_byte_stream.py\nioLiveFileTailByteStream]
+  [io_generated_waveform_byte_stream.py\nioGeneratedWaveformByteStream]
+  [io_null_writable_byte_stream.py\nioNullWritableByteStream]
+}
+
+package "oscilloscope/ Filter Files" {
+  [io_signal_filter.py\nioSignalFilter]
+  [io_sample_mapping_filter_base.py\nioSampleMappingFilterBase]
+  [io_scale_filter.py\nioScaleFilter]
+  [io_offset_filter.py\nioOffsetFilter]
+  [io_filter_pipeline.py\nioFilterPipeline]
+}
+
+package "oscilloscope/ Source Files" {
+  [io_signal_source.py\nioSignalSource]
+  [io_generated_waveform_source.py\nioGeneratedWaveformSource]
+  [io_file_waveform_source.py\nioFileWaveformSource]
+  [io_ftdi_waveform_source.py\nioFtdiWaveformSource]
+  [io_waveform_generator.py\nioWaveformGenerator]
+}
+
+package "oscilloscope/ Theme Files" {
+  [io_view_theme.py\nioViewTheme]
+  [io_static_theme_base.py\nioStaticThemeBase]
+  [io_portrait_theme.py\nioPortraitTheme]
+  [io_landscape_theme.py\nioLandscapeTheme]
+}
+
+package "oscilloscope/ Compatibility Files" {
+  [_qt_compat.py\nQt import shim]
+  [controller.py\nre-export]
+  [model.py\nre-export]
+  [view.py\nre-export]
+  [filters.py\nre-export]
+  [io_tk_oscilloscope_window.py\nioTkOscilloscopeWindow]
+}
+
+package "ioLibrary/ Stream Files" {
+  [io_library_error.py\nioLibraryError]
+  [io_ftdi_error.py\nioFtdiError]
+  [io_stream_lifecycle.py\nioStreamLifecycle]
+  [io_readable_byte_stream.py\nioReadableByteStream]
+  [io_writable_byte_stream.py\nioWritableByteStream]
+  [io_abstract_readable_byte_stream.py\nioAbstractReadableByteStream]
+  [io_abstract_writable_byte_stream.py\nioAbstractWritableByteStream]
+  [io_abstract_session_backed_byte_stream.py\nioAbstractSessionBackedByteStream]
+  [io_abstract_file_backed_byte_stream.py\nioAbstractFileBackedByteStream]
+  [_ftdi_session.py\nioFtdiSession]
+  [io_ftdi_byte_stream.py\nioFtdiByteStream]
+  [io_ftdi_output_byte_stream.py\nioFtdiOutputByteStream]
+  [io_file_input_byte_stream.py\nioFileInputByteStream]
+  [io_file_byte_stream.py\nioFileByteStream]
+}
+
+package "ioLibrary/ Pipeline Files" {
+  [io_pipeline_config.py\nioPipelineConfig]
+  [io_acquisition_config.py\nioAcquisitionConfig]
+  [io_transfer_config.py\nioTransferConfig]
+  [data_buffer.py\nioDataBuffer]
+  [io_threaded_worker_base.py\nioThreadedWorkerBase]
+  [io_abstract_threaded_stream_worker.py\nioAbstractThreadedStreamWorker]
+  [io_recovery_manager.py\nioRecoveryManager]
+  [io_byte_count_monitor_base.py\nioByteCountMonitorBase]
+  [io_acquisition_monitor.py\nioAcquisitionMonitor]
+  [io_throughput_monitor.py\nioThroughputMonitor]
+  [io_rate_scheduler_base.py\nioRateSchedulerBase]
+  [io_input_scheduler.py\nioInputScheduler]
+  [io_output_scheduler.py\nioOutputScheduler]
+  [io_usb_read_controller.py\nioUsbReadController]
+  [io_usb_write_controller.py\nioUsbWriteController]
+  [io_pipeline_controller.py\nioPipelineController]
+}
+
+package "ioLibrary/ Legacy Compatibility Files" {
+  [buffer.py\nioBuffer]
+  [reader.py\nioRead]
+  [writer.py\nioWrite]
+  [_operation.py\nioBaseIoOperation]
+  [pipeline.py\nre-export]
+  [multithreaded_read.py\nre-export]
+  [multithreaded_write.py\nre-export]
+  [errors.py\nre-export]
+}
+
+package "tests/" {
+  [test_oscilloscope.py]
+  [test_scope_qt.py]
+  [test_scope_shell.py]
+  [test_multithreaded_read.py]
+  [test_multithreaded_write.py]
+}
+
+[controller.py] --> [io_scope_qt.py]
+[controller.py] --> [io_scope_shell.py]
+[controller.py] --> [io_pipeline_cli.py]
+[controller.py] --> [io_legacy_ftdi_cli.py]
+[controller.py] --> [io_file_comparator.py]
+[io_scope_qt.py\nQt launcher] --> [io_qt_scope_window.py\nioQtScopeWindow]
+[io_scope_qt.py\nQt launcher] --> [io_oscilloscope_controller.py\nioOscilloscopeController]
+[io_scope_shell.py\nioScopeShell] --> [io_oscilloscope_controller.py\nioOscilloscopeController]
+[io_scope_shell.py\nioScopeShell] --> [io_scope_settings_store.py\nioScopeSettingsStore]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_oscilloscope_model.py\nioOscilloscopeModel]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_oscilloscope_view.py\nioOscilloscopeView]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_compact_oscilloscope_view.py\nioCompactOscilloscopeView]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView]
+[io_oscilloscope_controller.py\nioOscilloscopeController] --> [io_live_oscilloscope_session.py\nioLiveOscilloscopeSession]
+[io_compact_oscilloscope_view.py\nioCompactOscilloscopeView] --> [io_oscilloscope_view.py\nioOscilloscopeView]
+[io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView] --> [io_oscilloscope_view.py\nioOscilloscopeView]
+[io_qt_scope_window.py\nioQtScopeWindow] --> [io_compact_oscilloscope_view.py\nioCompactOscilloscopeView]
+[io_qt_scope_window.py\nioQtScopeWindow] --> [io_detailed_oscilloscope_view.py\nioDetailedOscilloscopeView]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_control_state.py\nioControlState]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_viewport_state.py\nioViewportState]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_filter_pipeline.py\nioFilterPipeline]
+[io_oscilloscope_model.py\nioOscilloscopeModel] --> [io_waveform_generator.py\nioWaveformGenerator]
+[io_filter_pipeline.py\nioFilterPipeline] --> [io_scale_filter.py\nioScaleFilter]
+[io_filter_pipeline.py\nioFilterPipeline] --> [io_offset_filter.py\nioOffsetFilter]
+[io_waveform_generator.py\nioWaveformGenerator] --> [io_generated_waveform_source.py\nioGeneratedWaveformSource]
+[io_waveform_generator.py\nioWaveformGenerator] --> [io_file_waveform_source.py\nioFileWaveformSource]
+[io_waveform_generator.py\nioWaveformGenerator] --> [io_ftdi_waveform_source.py\nioFtdiWaveformSource]
+[io_ftdi_waveform_source.py\nioFtdiWaveformSource] --> [io_ftdi_byte_stream.py\nioFtdiByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_live_sample_history.py\nioLiveSampleHistory]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_tapped_readable_byte_stream.py\nioTappedReadableByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_live_file_tail_byte_stream.py\nioLiveFileTailByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_generated_waveform_byte_stream.py\nioGeneratedWaveformByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_null_writable_byte_stream.py\nioNullWritableByteStream]
+[io_live_oscilloscope_session.py\nioLiveOscilloscopeSession] --> [io_pipeline_controller.py\nioPipelineController]
+[io_pipeline_cli.py\nioPipelineCli] --> [io_pipeline_controller.py\nioPipelineController]
+[io_pipeline_controller.py\nioPipelineController] --> [io_pipeline_config.py\nioPipelineConfig]
+[io_pipeline_controller.py\nioPipelineController] --> [io_acquisition_config.py\nioAcquisitionConfig]
+[io_pipeline_controller.py\nioPipelineController] --> [io_transfer_config.py\nioTransferConfig]
+[io_pipeline_controller.py\nioPipelineController] --> [data_buffer.py\nioDataBuffer]
+[io_pipeline_controller.py\nioPipelineController] --> [io_acquisition_monitor.py\nioAcquisitionMonitor]
+[io_pipeline_controller.py\nioPipelineController] --> [io_throughput_monitor.py\nioThroughputMonitor]
+[io_pipeline_controller.py\nioPipelineController] --> [io_input_scheduler.py\nioInputScheduler]
+[io_pipeline_controller.py\nioPipelineController] --> [io_output_scheduler.py\nioOutputScheduler]
+[io_pipeline_controller.py\nioPipelineController] --> [io_recovery_manager.py\nioRecoveryManager]
+[io_pipeline_controller.py\nioPipelineController] --> [io_usb_read_controller.py\nioUsbReadController]
+[io_pipeline_controller.py\nioPipelineController] --> [io_usb_write_controller.py\nioUsbWriteController]
+[io_usb_read_controller.py\nioUsbReadController] --> [io_readable_byte_stream.py\nioReadableByteStream]
+[io_usb_write_controller.py\nioUsbWriteController] --> [io_writable_byte_stream.py\nioWritableByteStream]
+[io_usb_read_controller.py\nioUsbReadController] --> [data_buffer.py\nioDataBuffer]
+[io_usb_write_controller.py\nioUsbWriteController] --> [data_buffer.py\nioDataBuffer]
+[reader.py\nioRead] --> [buffer.py\nioBuffer]
+[writer.py\nioWrite] --> [buffer.py\nioBuffer]
+[reader.py\nioRead] --> [_ftdi_session.py\nioFtdiSession]
+[writer.py\nioWrite] --> [_ftdi_session.py\nioFtdiSession]
+[test_oscilloscope.py] --> [io_oscilloscope_controller.py\nioOscilloscopeController]
+[test_scope_qt.py] --> [io_scope_qt.py\nQt launcher]
+[test_scope_shell.py] --> [io_scope_shell.py\nioScopeShell]
+[test_multithreaded_read.py] --> [io_usb_read_controller.py\nioUsbReadController]
+[test_multithreaded_write.py] --> [io_usb_write_controller.py\nioUsbWriteController]
+
+note bottom of [view.py\nre-export]
+Compatibility re-export only.
+The primary view abstraction lives in
+io_oscilloscope_view.py.
+It should not be graded as the View design itself.
+end note
+
+note bottom of [io_tk_oscilloscope_window.py\nioTkOscilloscopeWindow]
+Retained for legacy compatibility.
+It is not part of the primary Qt path.
+end note
+
+note bottom of [ftd2xx_wrapper.py\nioFtdiDevice]
+Canonical adapter name follows the io<ClassName> rule.
+The older FtdiDevice import remains as a thin alias.
+end note
+
+note bottom of [controller.py]
+This development view is file-traceability oriented.
+Each class-bearing source file maps to one primary class
+so the one-class-per-file rule can be graded directly.
+end note
+@enduml

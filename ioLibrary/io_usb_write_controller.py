@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import threading
-from typing import Optional
-
 from .data_buffer import ioDataBuffer
+from .io_abstract_threaded_stream_worker import ioAbstractThreadedStreamWorker
 from .io_output_scheduler import ioOutputScheduler
 from .io_recovery_manager import ioRecoveryManager
 from .io_throughput_monitor import ioThroughputMonitor
@@ -11,7 +9,7 @@ from .io_transfer_config import ioTransferConfig
 from .io_writable_byte_stream import ioWritableByteStream
 
 
-class ioUsbWriteController:
+class ioUsbWriteController(ioAbstractThreadedStreamWorker):
     def __init__(
         self,
         stream: ioWritableByteStream,
@@ -21,45 +19,20 @@ class ioUsbWriteController:
         recovery_manager: ioRecoveryManager,
         scheduler: ioOutputScheduler,
     ):
+        super().__init__()
         self.stream = stream
         self.cfg = cfg
         self.buffer = buffer
         self.throughput_monitor = throughput_monitor
         self.recovery_manager = recovery_manager
         self.scheduler = scheduler
-        self.running = False
-        self.thread = None
-        self.lock = threading.Lock()
 
-    def start(self) -> None:
-        with self.lock:
-            if self.running:
-                return
-            self.running = True
+    def _run_worker(self) -> None:
+        self.write_loop()
 
-        if not self.stream.is_connected():
-            self.stream.open()
-
-        self.thread = threading.Thread(target=self.write_loop, daemon=True)
-        self.thread.start()
-
-    def stop(self) -> None:
-        with self.lock:
-            self.running = False
-
-        if self.thread is not None:
-            self.thread.join(timeout=2.0)
-        elif self.stream.is_connected():
-            # Defensive cleanup if start() opened the stream but no worker thread exists.
+    def _handle_stop_without_thread(self) -> None:
+        if self.stream.is_connected():
             self.stream.close()
-
-    def join(self, timeout: Optional[float] = None) -> None:
-        if self.thread is not None:
-            self.thread.join(timeout=timeout)
-
-    def is_running(self) -> bool:
-        with self.lock:
-            return self.running
 
     def _should_exit(self) -> bool:
         return not self.is_running() and self.buffer.is_empty()
@@ -101,11 +74,6 @@ class ioUsbWriteController:
             self.recovery_manager.notify_user(f"Write failure: {exc}")
             self.recovery_manager.transition_to_safe_stop()
             self.buffer.close()
-        finally:
-            if self.stream.is_connected():
-                self.stream.close()
-            with self.lock:
-                self.running = False
 
 
 UsbWriteController = ioUsbWriteController

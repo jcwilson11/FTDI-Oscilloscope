@@ -1,6 +1,30 @@
 import unittest
+from pathlib import Path
 
-from ioLibrary import IoLibraryError, ioBuffer, ioRead, ioWrite
+from ioLibrary import (
+    AbstractFileBackedByteStream,
+    AbstractReadableByteStream,
+    AbstractSessionBackedByteStream,
+    AbstractWritableByteStream,
+    ByteCountMonitorBase,
+    IoLibraryError,
+    RateSchedulerBase,
+    StreamLifecycle,
+    ThreadedWorkerBase,
+    ioAcquisitionMonitor,
+    ioBuffer,
+    ioFileByteStream,
+    ioFileInputByteStream,
+    ioFtdiByteStream,
+    ioFtdiOutputByteStream,
+    ioInputScheduler,
+    ioOutputScheduler,
+    ioRead,
+    ioThroughputMonitor,
+    ioUsbReadController,
+    ioUsbWriteController,
+    ioWrite,
+)
 
 
 class FakeSession:
@@ -25,7 +49,55 @@ class FakeSession:
         return self.read_payload[:count]
 
 
+class NonContextReadSession:
+    def __init__(self):
+        self.opened = False
+        self.initialized = False
+        self.closed = False
+
+    def open(self):
+        self.opened = True
+
+    def initialize_bitbang(self):
+        self.initialized = True
+
+    def close(self):
+        self.closed = True
+
+    def read_bytes(self, count: int) -> bytes:
+        return b"A" * count
+
+
+class NonContextWriteSession:
+    def __init__(self):
+        self.opened = False
+        self.closed = False
+        self.writes = []
+
+    def open(self):
+        self.opened = True
+
+    def close(self):
+        self.closed = True
+
+    def write_bytes(self, data: bytes) -> int:
+        self.writes.append(bytes(data))
+        return len(data)
+
+
 class IoLibraryTests(unittest.TestCase):
+    def setUp(self):
+        self.input_path = Path("io_library_test_input.bin")
+        self.output_path = Path("io_library_test_output.bin")
+        for path in (self.input_path, self.output_path):
+            if path.exists():
+                path.unlink()
+
+    def tearDown(self):
+        for path in (self.input_path, self.output_path):
+            if path.exists():
+                path.unlink()
+
     def test_buffer_exposes_diagram_style_accessors(self):
         buffer = ioBuffer(2, initial_data=[0xAA, 0x55])
 
@@ -113,6 +185,62 @@ class IoLibraryTests(unittest.TestCase):
         self.assertEqual(data, b"\x10\x20")
         self.assertEqual(reader.byte_count, 2)
         self.assertEqual(buffer.read(2), b"\x10\x20")
+
+    def test_stream_contracts_and_bases_are_explicit(self):
+        self.assertTrue(issubclass(ioFtdiByteStream, AbstractReadableByteStream))
+        self.assertTrue(issubclass(ioFtdiByteStream, AbstractSessionBackedByteStream))
+        self.assertTrue(issubclass(ioFtdiOutputByteStream, AbstractWritableByteStream))
+        self.assertTrue(issubclass(ioFtdiOutputByteStream, AbstractSessionBackedByteStream))
+        self.assertTrue(issubclass(ioFileInputByteStream, AbstractReadableByteStream))
+        self.assertTrue(issubclass(ioFileInputByteStream, AbstractFileBackedByteStream))
+        self.assertTrue(issubclass(ioFileByteStream, AbstractWritableByteStream))
+        self.assertTrue(issubclass(ioFileByteStream, AbstractFileBackedByteStream))
+        self.assertIsInstance(ioFileByteStream(str(self.output_path), append=False), StreamLifecycle)
+
+    def test_session_backed_streams_share_open_and_close_lifecycle(self):
+        read_session = NonContextReadSession()
+        write_session = NonContextWriteSession()
+        input_stream = ioFtdiByteStream(session_factory=lambda: read_session)
+        output_stream = ioFtdiOutputByteStream(session_factory=lambda: write_session)
+
+        input_stream.open()
+        output_stream.open()
+        output_stream.write_bytes(b"AB")
+        input_stream.close()
+        output_stream.close()
+
+        self.assertTrue(read_session.opened)
+        self.assertTrue(read_session.initialized)
+        self.assertTrue(read_session.closed)
+        self.assertTrue(write_session.opened)
+        self.assertTrue(write_session.closed)
+        self.assertEqual(write_session.writes, [b"AB"])
+
+    def test_file_backed_streams_preserve_exhaustion_and_overwrite_behavior(self):
+        self.input_path.write_bytes(b"XYZ")
+        input_stream = ioFileInputByteStream(str(self.input_path))
+        output_stream = ioFileByteStream(str(self.output_path), append=False)
+
+        input_stream.open()
+        output_stream.open()
+        payload = input_stream.read_bytes(8)
+        trailing = input_stream.read_bytes(8)
+        output_stream.write_bytes(payload)
+        input_stream.close()
+        output_stream.close()
+
+        self.assertEqual(payload, b"XYZ")
+        self.assertEqual(trailing, b"")
+        self.assertTrue(input_stream.is_exhausted())
+        self.assertEqual(self.output_path.read_bytes(), b"XYZ")
+
+    def test_worker_scheduler_and_monitor_classes_share_common_bases(self):
+        self.assertTrue(issubclass(ioUsbReadController, ThreadedWorkerBase))
+        self.assertTrue(issubclass(ioUsbWriteController, ThreadedWorkerBase))
+        self.assertTrue(issubclass(ioInputScheduler, RateSchedulerBase))
+        self.assertTrue(issubclass(ioOutputScheduler, RateSchedulerBase))
+        self.assertTrue(issubclass(ioAcquisitionMonitor, ByteCountMonitorBase))
+        self.assertTrue(issubclass(ioThroughputMonitor, ByteCountMonitorBase))
 
 
 if __name__ == "__main__":

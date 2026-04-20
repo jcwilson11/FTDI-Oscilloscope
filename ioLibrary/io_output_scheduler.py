@@ -1,26 +1,9 @@
-import time
+from .io_rate_scheduler_base import ioRateSchedulerBase
 
 
-class ioOutputScheduler:
-    def __init__(self):
-        self.next_time = None
-
+class ioOutputScheduler(ioRateSchedulerBase):
     def sleep_until_next_output(self, output_hz: float) -> None:
-        if output_hz <= 0:
-            return
-
-        period = 1.0 / output_hz
-        now = time.perf_counter()
-
-        if self.next_time is None:
-            self.next_time = now + period
-            return
-
-        delay = self.next_time - now
-        if delay > 0:
-            time.sleep(delay)
-
-        self.next_time += period
+        self._sleep_until_next_rate(output_hz)
 
 
 OutputScheduler = ioOutputScheduler

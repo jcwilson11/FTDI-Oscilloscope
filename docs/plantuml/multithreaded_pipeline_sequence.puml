@@ -1,0 +1,108 @@
+@startuml
+title Multithreaded Data Acquisition Pipeline - Sequence Diagram
+
+skinparam shadowing false
+
+actor "Pipeline CLI" as CLI
+participant "ioPipelineController" as Controller
+participant "ioUsbReadController\n<<read worker>>" as Reader
+participant "ioDataBuffer\n<<circular buffer>>" as Buffer
+participant "ioUsbWriteController\n<<write worker>>" as Writer
+participant "ioFileInputByteStream" as FileInput
+participant "Input File" as InputFile
+participant "ioFtdiByteStream" as FtdiInput
+participant "InputSession : ioFtdiSession" as InputSession
+participant "FTDI Input Device" as InputDevice
+participant "ioFileByteStream" as FileSink
+participant "Output File" as OutputFile
+participant "ioFtdiOutputByteStream" as FtdiSink
+participant "OutputSession : ioFtdiSession" as OutputSession
+participant "FTDI Output Device" as OutputDevice
+
+CLI -> Controller : create(config)
+note right of CLI
+config now includes input_mode,
+input_path, output_mode,
+append_output, chunk sizes,
+frequencies, and buffer capacity
+end note
+Controller -> Buffer : create(capacity)
+Controller -> Controller : select input stream
+Controller -> Controller : select output stream
+Controller -> Writer : start()
+Controller -> Reader : start()
+
+loop while pipeline is running
+  alt input source is file
+    Reader -> FileInput : read_bytes(chunk_size)
+    FileInput -> InputFile : read(chunk_size)
+    InputFile --> FileInput : bytes or EOF
+    FileInput --> Reader : bytes or b""
+    alt file data available
+      Reader -> Buffer : push(bytes)
+    else EOF reached
+      Reader -> Buffer : close()
+      note right of Reader
+        In file-input mode, EOF closes
+        the shared buffer so the writer
+        can drain and exit cleanly.
+      end note
+    end
+  else input source is FTDI
+    Reader -> FtdiInput : read_bytes(chunk_size)
+    FtdiInput -> InputSession : FTDI read request
+    InputSession -> InputDevice : FT_Read(chunk_size)
+    InputDevice --> InputSession : bytes
+    InputSession --> FtdiInput : bytes
+    FtdiInput --> Reader : bytes
+    Reader -> Buffer : push(bytes)
+  end
+
+  alt buffer full
+    note right of Buffer
+      Producer blocks until
+      the consumer frees space.
+    end note
+    Buffer --> Reader : wait for not_full
+  else space available
+    Buffer --> Reader : bytes accepted
+  end
+
+  Writer -> Buffer : pop(max_bytes)
+  alt buffer empty
+    note right of Buffer
+      Consumer blocks until
+      data arrives or the buffer closes.
+    end note
+    Buffer --> Writer : wait for not_empty
+  else data available
+    Buffer --> Writer : bytes
+    alt destination is file
+      Writer -> FileSink : write_bytes(bytes)
+      FileSink -> OutputFile : append or overwrite
+      OutputFile --> FileSink : bytes persisted
+      FileSink --> Writer : bytes written
+    else destination is FTDI
+      Writer -> FtdiSink : write_bytes(bytes)
+      FtdiSink -> OutputSession : write_bytes(bytes)
+      OutputSession -> OutputDevice : FT_Write(bytes)
+      OutputDevice --> OutputSession : bytes accepted
+      OutputSession --> FtdiSink : bytes written
+      FtdiSink --> Writer : bytes written
+    end
+  end
+end
+
+CLI -> Controller : stop()
+Controller -> Reader : stop()
+Reader --> Controller : reader stopped
+Controller -> Buffer : close()
+Controller -> Writer : stop()
+note right of Writer
+  The writer drains any remaining
+  buffered bytes before its loop exits.
+end note
+Writer -> FileSink : close() if selected
+Writer -> FtdiSink : close() if selected
+
+@enduml

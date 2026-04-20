@@ -1,0 +1,52 @@
+@startuml
+title ioScope Runtime Component View
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+component "controller.py" as bootstrap
+component "ioQtScopeWindow" as qtWindow
+component "ioScopeShell" as shell
+component "ioOscilloscopeController" as controller
+component "ioOscilloscopeModel" as model
+component "ioCompactOscilloscopeView" as compactView
+component "ioDetailedOscilloscopeView" as detailedView
+component "ioWaveformGenerator" as generator
+component "ioFilterPipeline" as filterPipeline
+component "ioFtdiWaveformSource" as ftdiSource
+component "ioFileWaveformSource" as fileSource
+component "ioGeneratedWaveformSource" as generatedSource
+component "ioDataBuffer" as buffer
+component "ioUsbReadController" as readWorker
+component "ioUsbWriteController" as writeWorker
+
+bootstrap --> qtWindow : scope-qt
+bootstrap --> shell : scope-shell
+qtWindow --> controller : UI events
+shell --> controller : CLI commands
+controller --> model
+controller --> compactView : render()
+controller --> detailedView : render()
+model --> generator : acquire raw signal
+model --> filterPipeline : scale + offset
+generator --> ftdiSource
+generator --> fileSource
+generator --> generatedSource
+readWorker --> buffer
+writeWorker --> buffer
+
+note bottom of controller
+The controller fans out one processed
+render state to both concrete views.
+end note
+
+note bottom of qtWindow
+The Qt window is a host component.
+It chooses which concrete view is visible
+without replacing the single View abstraction.
+end note
+
+note bottom of buffer
+The implemented transport path uses one shared
+bounded circular buffer between the two workers.
+end note
+@enduml

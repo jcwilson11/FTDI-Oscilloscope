@@ -95,8 +95,13 @@ Current architecture additions:
 - `ioLibrary.ioBuffer` manages reusable byte buffers
 - `ioLibrary.ioRead` reads bytes from the FTDI device into an external buffer at a configured frequency
 - `ioLibrary.ioWrite` writes bytes from an external buffer at a configured frequency
+- `ioLibrary.ioStreamLifecycle`, `ioReadableByteStream`, and `ioWritableByteStream` make the stream contracts explicit
+- `ioAbstractReadableByteStream` and `ioAbstractWritableByteStream` centralize the shared `read_bytes` and `write_bytes` responsibilities across file and FTDI adapters
+- `ioAbstractSessionBackedByteStream` and `ioAbstractFileBackedByteStream` centralize duplicated stream lifecycle behavior
+- `ioThreadedWorkerBase`, `ioRateSchedulerBase`, and `ioByteCountMonitorBase` centralize duplicated worker, scheduler, and monitor behavior
 - `demo_led_blink.py` demonstrates LED blinking with `0xFF` and `0x00` at 1 Hz and 2 Hz
-- `oscilloscope/` contains scaffolding for the future MVC user interface and Pipe-and-Filter signal processing redesign
+- `oscilloscope/` contains the MVC user interface and Pipe-and-Filter signal processing redesign, including `ioOscilloscopeWindow`, `ioStaticThemeBase`, `ioSampleMappingFilterBase`, and signal-source strategies behind `ioWaveformGenerator`
+- `oscilloscope/io_live_oscilloscope_session.py` keeps live acquisition, tee output, and rolling sample history separate from the MVC View classes
 - `ioLibrary.pipeline.PipelineController` coordinates the multithreaded FTDI read -> circular buffer -> write pipeline
 - `controller.py pipeline` provides a command-line entrypoint for the multithreaded pipeline
 
@@ -360,4 +365,73 @@ pytest -q
 ```
 
 The repository includes `tests/conftest.py`, which inserts the project root onto `sys.path` so the tests can import `ioLibrary` and `controller` without requiring a manual `PYTHONPATH` step.
+
+## Oscilloscope Qt Demo
+
+The repository now includes a professor-facing Qt oscilloscope architecture built around one abstract View contract and two selectable concrete Qt interfaces.
+
+Canonical class names follow the `io<ClassName>` rule.
+Legacy names remain only as thin compatibility aliases where needed.
+
+Compile check:
+
+```powershell
+python -m compileall controller.py io_scope_qt.py io_scope_shell.py ioLibrary oscilloscope tests
+```
+
+Verification:
+
+```powershell
+pytest -q
+```
+
+Run the Qt oscilloscope entrypoint:
+
+```powershell
+python controller.py scope-qt --headless
+```
+
+Run the shell verification harness:
+
+```powershell
+python controller.py scope-shell
+```
+
+Supported shell commands:
+
+```text
+scope start
+sampleTime=1ms
+sampleFor=10s
+input=sine
+input=file:demo_input.bin
+scale=2.0
+offset=0.25
+theme=portrait
+theme=landscape
+status
+stop
+```
+
+Runtime settings are persisted in `io_scope_settings.json` at the repository root, so scale, offset, theme, input source, FTDI settings, and active view survive between sessions.
+
+Supporting architecture documents:
+
+- `docs/io_project_requirements.md`
+- `docs/architecture/io_qt_mvc_architecture.md`
+- `docs/ai_prompt_and_output.md`
+- `docs/traceability_matrix.md`
+- `docs/plantuml/io_scope_package.puml`
+- `docs/plantuml/io_scope_logical_class.puml`
+- `docs/plantuml/io_scope_logical_class_readable.puml`
+- `docs/plantuml/io_scope_process.puml`
+- `docs/plantuml/io_scope_development.puml`
+- `docs/plantuml/io_scope_physical.puml`
+- `docs/plantuml/io_scope_scenario_sequence.puml`
+- `docs/plantuml/io_scope_use_case.puml`
+- `docs/plantuml/io_scope_deployment.puml`
+- `docs/plantuml/io_scope_runtime_component.puml`
+- `docs/plantuml/io_scope_object.puml`
+- `docs/plantuml/io_scope_start_sequence.puml`
+- `docs/plantuml/io_scope_controls_sequence.puml`
 

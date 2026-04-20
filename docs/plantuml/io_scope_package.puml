@@ -1,0 +1,201 @@
+@startuml
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+package "controller.py bootstrap" {
+  class controller
+}
+
+package "CLI Layer" {
+  class ioScopeShell
+  class ioPipelineCli
+  class ioLegacyFtdiCli
+  class ioFileComparator
+}
+
+package "Qt MVC Layer" {
+  abstract class ioOscilloscopeView
+  class ioCompactOscilloscopeView
+  class ioDetailedOscilloscopeView
+  class ioQtScopeWindow
+  class ioOscilloscopeController
+  class ioOscilloscopeModel
+  class ioControlState
+  class ioViewportState
+  class ioRenderState
+  class ioScopeSettingsStore
+}
+
+package "Live Session Layer" {
+  class ioLiveOscilloscopeSession
+  class ioLiveSampleHistory
+  class ioTappedReadableByteStream
+  class ioLiveFileTailByteStream
+  class ioGeneratedWaveformByteStream
+  class ioNullWritableByteStream
+}
+
+package "Signal Pipeline" {
+  interface ioSignalFilter
+  abstract class ioSampleMappingFilterBase
+  class ioScaleFilter
+  class ioOffsetFilter
+  class ioFilterPipeline
+}
+
+package "Signal Sources + Themes" {
+  interface ioSignalSource
+  class ioGeneratedWaveformSource
+  class ioFileWaveformSource
+  class ioFtdiWaveformSource
+  class ioWaveformGenerator
+  abstract class ioViewTheme
+  abstract class ioStaticThemeBase
+  class ioPortraitTheme
+  class ioLandscapeTheme
+}
+
+package "ioLibrary Stream Hierarchy" {
+  interface ioStreamLifecycle
+  interface ioReadableByteStream
+  interface ioWritableByteStream
+  abstract class ioAbstractReadableByteStream
+  abstract class ioAbstractWritableByteStream
+  abstract class ioAbstractSessionBackedByteStream
+  abstract class ioAbstractFileBackedByteStream
+  class ioFtdiByteStream
+  class ioFtdiOutputByteStream
+  class ioFileInputByteStream
+  class ioFileByteStream
+  class ioFtdiSession
+  class ioFtdiDevice
+}
+
+package "ioLibrary Pipeline" {
+  class ioPipelineController
+  class ioPipelineConfig
+  class ioAcquisitionConfig
+  class ioTransferConfig
+  class ioDataBuffer
+  abstract class ioThreadedWorkerBase
+  abstract class ioAbstractThreadedStreamWorker
+  class ioUsbReadController
+  class ioUsbWriteController
+  class ioRecoveryManager
+  class ioAcquisitionMonitor
+  class ioThroughputMonitor
+  abstract class ioRateSchedulerBase
+  class ioInputScheduler
+  class ioOutputScheduler
+}
+
+controller --> ioScopeShell
+controller --> ioPipelineCli
+controller --> ioLegacyFtdiCli
+controller --> ioFileComparator
+controller --> ioQtScopeWindow : scope-qt
+
+ioScopeShell --> ioOscilloscopeController
+ioScopeShell --> ioScopeSettingsStore
+ioQtScopeWindow --> ioCompactOscilloscopeView
+ioQtScopeWindow --> ioDetailedOscilloscopeView
+ioQtScopeWindow --> ioOscilloscopeController
+
+ioCompactOscilloscopeView --|> ioOscilloscopeView
+ioDetailedOscilloscopeView --|> ioOscilloscopeView
+ioOscilloscopeController --> ioOscilloscopeModel
+ioOscilloscopeController --> ioOscilloscopeView : render fan-out
+ioOscilloscopeController --> ioRenderState
+ioOscilloscopeController --> ioLiveOscilloscopeSession
+ioOscilloscopeModel --> ioControlState
+ioOscilloscopeModel --> ioViewportState
+ioOscilloscopeModel --> ioFilterPipeline
+ioOscilloscopeModel --> ioWaveformGenerator
+
+ioLiveOscilloscopeSession --> ioLiveSampleHistory
+ioLiveOscilloscopeSession --> ioTappedReadableByteStream
+ioLiveOscilloscopeSession --> ioLiveFileTailByteStream
+ioLiveOscilloscopeSession --> ioGeneratedWaveformByteStream
+ioLiveOscilloscopeSession --> ioNullWritableByteStream
+ioLiveOscilloscopeSession --> ioPipelineController
+
+ioFilterPipeline ..> ioSignalFilter
+ioSampleMappingFilterBase --|> ioSignalFilter
+ioScaleFilter --|> ioSampleMappingFilterBase
+ioOffsetFilter --|> ioSampleMappingFilterBase
+
+ioWaveformGenerator ..> ioSignalSource
+ioGeneratedWaveformSource ..|> ioSignalSource
+ioFileWaveformSource ..|> ioSignalSource
+ioFtdiWaveformSource ..|> ioSignalSource
+
+ioPortraitTheme --|> ioStaticThemeBase
+ioLandscapeTheme --|> ioStaticThemeBase
+ioStaticThemeBase --|> ioViewTheme
+ioOscilloscopeView --> ioViewTheme
+
+ioReadableByteStream --|> ioStreamLifecycle
+ioWritableByteStream --|> ioStreamLifecycle
+ioAbstractReadableByteStream ..|> ioReadableByteStream
+ioAbstractWritableByteStream ..|> ioWritableByteStream
+ioFtdiByteStream --|> ioAbstractReadableByteStream
+ioFtdiOutputByteStream --|> ioAbstractWritableByteStream
+ioFileInputByteStream --|> ioAbstractReadableByteStream
+ioFileByteStream --|> ioAbstractWritableByteStream
+ioFtdiByteStream --|> ioAbstractSessionBackedByteStream
+ioFtdiOutputByteStream --|> ioAbstractSessionBackedByteStream
+ioFileInputByteStream --|> ioAbstractFileBackedByteStream
+ioFileByteStream --|> ioAbstractFileBackedByteStream
+ioAbstractSessionBackedByteStream --> ioFtdiSession
+ioFtdiDevice --|> ioFtdiSession
+
+ioPipelineCli --> ioPipelineController
+ioPipelineController --> ioPipelineConfig
+ioPipelineController --> ioDataBuffer
+ioPipelineController --> ioUsbReadController
+ioPipelineController --> ioUsbWriteController
+ioUsbReadController --|> ioAbstractThreadedStreamWorker
+ioUsbWriteController --|> ioAbstractThreadedStreamWorker
+ioAbstractThreadedStreamWorker --|> ioThreadedWorkerBase
+ioUsbReadController --> ioAcquisitionConfig
+ioUsbReadController --> ioAcquisitionMonitor
+ioUsbReadController --> ioInputScheduler
+ioUsbReadController --> ioReadableByteStream
+ioUsbWriteController --> ioTransferConfig
+ioUsbWriteController --> ioThroughputMonitor
+ioUsbWriteController --> ioOutputScheduler
+ioUsbWriteController --> ioWritableByteStream
+ioUsbReadController --> ioDataBuffer
+ioUsbWriteController --> ioDataBuffer
+ioUsbReadController --> ioRecoveryManager
+ioUsbWriteController --> ioRecoveryManager
+ioInputScheduler --|> ioRateSchedulerBase
+ioOutputScheduler --|> ioRateSchedulerBase
+
+note right of ioOscilloscopeView
+Two concrete Qt UIs inherit from one
+abstract View contract. The controller
+renders both instances, and the Qt window
+chooses which one is visible.
+end note
+
+note bottom of ioDataBuffer
+Required transfer path:
+read thread -> circular buffer -> write thread
+Current branch implements one shared buffer only.
+The extra-credit dual-buffer design is not shown
+because it is not implemented here.
+end note
+
+note bottom of ioQtScopeWindow
+Host shell only.
+It switches the visible concrete view and
+does not create a second View abstraction.
+end note
+
+note bottom of ioLiveOscilloscopeSession
+Live acquisition remains a controller-owned service.
+It keeps background pipeline coordination and rolling
+sample history out of the View layer.
+end note
+@enduml

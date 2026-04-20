@@ -1,0 +1,88 @@
+@startuml
+title Multithreaded Data Acquisition Pipeline - Component Diagram
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+
+actor "CLI User" as User
+component "Pipeline CLI\n(command-line executable)" as CLI
+component "ioPipelineController" as Controller
+component "ioUsbReadController\n<<read worker>>" as ReadWorker
+queue "ioDataBuffer\n<<circular buffer>>" as CircularBuffer
+component "ioUsbWriteController\n<<write worker>>" as WriteWorker
+
+interface "ioReadableByteStream\n<<input source protocol>>" as InputSource
+component "ioFileInputByteStream\n<<file input source>>" as FileInput
+component "ioFtdiByteStream\n<<FTDI input source>>" as FtdiInput
+
+interface "ioWritableByteStream\n<<output sink protocol>>" as OutputSink
+component "ioFileByteStream\n<<file sink>>" as FileSink
+component "ioFtdiOutputByteStream\n<<FTDI sink>>" as FtdiSink
+
+component "InputSession : ioFtdiSession\n<<existing>>" as InputSession
+component "OutputSession : ioFtdiSession\n<<existing>>" as OutputSession
+node "FTDI Input Device" as InputDevice
+node "FTDI Output Device" as OutputDevice
+file "Input File" as InputFile
+file "Output File" as OutputFile
+file "Reference File" as ReferenceFile
+
+User --> CLI : run pipeline or compare-files
+CLI --> Controller : configure / create / start / stop
+CLI --> OutputFile : compare-files left input
+CLI --> ReferenceFile : compare-files right input
+
+Controller --> ReadWorker : manage thread lifecycle
+Controller --> WriteWorker : manage thread lifecycle
+Controller --> CircularBuffer : create / close
+Controller --> InputSource : select implementation
+Controller --> OutputSink : select implementation
+
+ReadWorker --> InputSource : read from source
+InputSource --> FileInput : file mode
+InputSource --> FtdiInput : FTDI mode
+FileInput --> InputFile : read bytes / EOF
+FtdiInput --> InputSession : FTDI session calls
+InputSession --> InputDevice : FT_Read operations
+
+ReadWorker --> CircularBuffer : push byte chunks
+WriteWorker --> CircularBuffer : pop byte chunks
+WriteWorker --> OutputSink : write bytes
+
+OutputSink --> FileSink : file mode
+OutputSink --> FtdiSink : FTDI mode
+FileSink --> OutputFile : append or overwrite bytes
+FtdiSink --> OutputSession : FTDI session calls
+OutputSession --> OutputDevice : FT_Write operations
+
+note right of ReadWorker
+ReadWorker.
+Current input path can be either
+FTDI hardware or a file-based demo source.
+end note
+
+note bottom of CircularBuffer
+Primary producer-consumer handoff.
+Implemented as ioDataBuffer with
+bounded ring storage and blocking
+push and pop synchronization.
+end note
+
+note right of WriteWorker
+WriteWorker.
+The writer keeps the same drain-and-write
+role regardless of selected destination.
+end note
+
+note bottom of CLI
+The repo now includes a compare-files
+subcommand for byte-for-byte validation
+of demo and reference binaries.
+end note
+
+note bottom of OutputSink
+OutputSink.
+ioFileByteStream supports append and
+overwrite workflows for demos.
+end note
+@enduml

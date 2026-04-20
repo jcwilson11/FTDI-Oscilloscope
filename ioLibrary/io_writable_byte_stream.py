@@ -1,17 +1,11 @@
-from typing import Protocol
+from typing import Protocol, runtime_checkable
+
+from .io_stream_lifecycle import ioStreamLifecycle
 
 
-class ioWritableByteStream(Protocol):
-    def open(self) -> None:
-        ...
-
-    def close(self) -> None:
-        ...
-
+@runtime_checkable
+class ioWritableByteStream(ioStreamLifecycle, Protocol):
     def write_bytes(self, data: bytes) -> int:
-        ...
-
-    def is_connected(self) -> bool:
         ...
 
 

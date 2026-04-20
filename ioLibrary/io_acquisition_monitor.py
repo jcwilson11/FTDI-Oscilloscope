@@ -1,23 +1,13 @@
-import threading
-import time
+from .io_byte_count_monitor_base import ioByteCountMonitorBase
 
 
-class ioAcquisitionMonitor:
-    def __init__(self):
-        self.total_read = 0
-        self.start_time = time.perf_counter()
-        self.lock = threading.Lock()
-
+class ioAcquisitionMonitor(ioByteCountMonitorBase):
     def record_read(self, nbytes: int) -> None:
-        with self.lock:
-            self.total_read += nbytes
+        self._record_bytes(nbytes)
 
-    def throughput_kbps(self) -> float:
-        with self.lock:
-            elapsed = time.perf_counter() - self.start_time
-            if elapsed <= 0:
-                return 0.0
-            return (self.total_read / 1024.0) / elapsed
+    @property
+    def total_read(self) -> int:
+        return self._get_total_count()
 
 
 AcquisitionMonitor = ioAcquisitionMonitor

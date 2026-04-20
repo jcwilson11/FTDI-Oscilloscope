@@ -1,0 +1,240 @@
+@startuml
+title Multithreaded Data Acquisition Pipeline - Write Side
+
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+
+class ioPipelineController {
+  - cfg: ioPipelineConfig
+  - reader: ioUsbReadController
+  - writer: ioUsbWriteController
+  - buffer: ioDataBuffer
+  - input_stream: ioReadableByteStream
+  - output_stream: ioWritableByteStream
+  - recovery_manager: ioRecoveryManager
+  - acquisition_monitor: ioAcquisitionMonitor
+  - throughput_monitor: ioThroughputMonitor
+  - input_scheduler: ioInputScheduler
+  - output_scheduler: ioOutputScheduler
+  + start(): void
+  + stop(): void
+  + join(): void
+  + status_snapshot(): dict
+}
+
+class ioPipelineConfig {
+  + input_mode: str
+  + input_device_index: int
+  + input_path: str
+  + output_mode: str
+  + output_path: str
+  + output_device_index: int
+  + append_output: bool
+  + bytes_per_read: int
+  + bytes_per_write: int
+  + input_hz: float
+  + output_hz: float
+  + buffer_capacity: int
+  + dll_path: str
+}
+
+class ioUsbWriteController <<write worker>> {
+  - buffer: ioDataBuffer
+  - stream: ioWritableByteStream
+  - cfg: ioTransferConfig
+  - throughput_monitor: ioThroughputMonitor
+  - recovery_manager: ioRecoveryManager
+  - scheduler: ioOutputScheduler
+  - running: bool
+  + start(): void
+  + write_loop(): void
+  + stop(): void
+  + join(): void
+}
+
+abstract class ioThreadedWorkerBase <<abstract>> {
+  - running: bool
+  - thread: Thread
+  - lock: Lock
+  + start(): void
+  + stop(): void
+  + join(): void
+  + is_running(): bool
+}
+
+class ioDataBuffer <<circular buffer>> {
+  - capacity: int
+  - _head: int
+  - _tail: int
+  - _count: int
+  - _storage: byte[]
+  - _lock: Lock
+  - _not_empty: Condition
+  - _not_full: Condition
+  - _closed: bool
+  + push(data: bytes): void
+  + pop(max_bytes: int, timeout=None): bytes
+  + close(): void
+  + is_closed(): bool
+  + is_full(): bool
+  + is_empty(): bool
+  + size(): int
+}
+
+class ioTransferConfig {
+  + output_hz: float
+  + bytes_per_write: int
+}
+
+class ioThroughputMonitor {
+  + total_written: int
+  + record_write(nbytes: int): void
+  + throughput_kbps(): float
+}
+
+abstract class ioByteCountMonitorBase <<abstract>> {
+  - _total_count: int
+  - start_time: float
+  - lock: Lock
+  + throughput_kbps(): float
+}
+
+class ioRecoveryManager {
+  + messages: list[str]
+  + safe_stopped: bool
+  + notify_user(msg: str): void
+  + transition_to_safe_stop(): void
+}
+
+class ioOutputScheduler {
+  + sleep_until_next_output(output_hz: float): void
+}
+
+abstract class ioRateSchedulerBase <<abstract>> {
+  - next_time: float
+}
+
+interface ioStreamLifecycle <<lifecycle protocol>> {
+  + open(): void
+  + close(): void
+  + is_connected(): bool
+}
+
+interface ioWritableByteStream <<output sink protocol>> {
+  + open(): void
+  + write_bytes(data: bytes): int
+  + close(): void
+  + is_connected(): bool
+}
+
+abstract class ioAbstractWritableByteStream <<abstract>> {
+  + write_bytes(data: bytes): int
+}
+
+abstract class ioAbstractFileBackedByteStream <<abstract>> {
+  - _path: str
+  - file_handle: BinaryIO
+  - connected: bool
+  + open(): void
+  + close(): void
+  + is_connected(): bool
+}
+
+abstract class ioAbstractSessionBackedByteStream <<abstract>> {
+  - device_index: int
+  - dll_path: str
+  - session_factory: Callable
+  - session: object
+  - connected: bool
+  + open(): void
+  + close(): void
+  + is_connected(): bool
+}
+
+class ioFileByteStream <<file sink>> {
+  - output_path: str
+  - append: bool
+  + open(): void
+  + write_bytes(data: bytes): int
+  + close(): void
+}
+
+class ioFtdiOutputByteStream <<FTDI sink>> {
+  - device_index: int
+  - session: ioFtdiSession
+  + open(): void
+  + write_bytes(data: bytes): int
+  + close(): void
+}
+
+class ioFtdiSession <<existing>> {
+  + open(): void
+  + read_bytes(count: int): bytes
+  + write_bytes(data: bytes): int
+  + close(): void
+}
+
+ioPipelineController "1" *-- "1" ioUsbWriteController
+ioPipelineController "1" *-- "1" ioDataBuffer
+ioPipelineController "1" *-- "1" ioRecoveryManager
+ioPipelineController "1" *-- "1" ioThroughputMonitor
+ioPipelineController "1" *-- "1" ioOutputScheduler
+ioPipelineController "1" *-- "1" ioPipelineConfig
+ioPipelineController "1" o-- "1" ioWritableByteStream : selected sink strategy
+
+ioUsbWriteController --> ioDataBuffer : pop()
+ioUsbWriteController --> ioWritableByteStream : write_bytes()
+ioUsbWriteController --> ioTransferConfig
+ioUsbWriteController --> ioThroughputMonitor
+ioUsbWriteController --> ioRecoveryManager
+ioUsbWriteController --> ioOutputScheduler
+
+ioThreadedWorkerBase <|-- ioUsbWriteController
+ioByteCountMonitorBase <|-- ioThroughputMonitor
+ioRateSchedulerBase <|-- ioOutputScheduler
+ioStreamLifecycle <|-- ioWritableByteStream
+ioWritableByteStream <|.. ioAbstractWritableByteStream
+ioStreamLifecycle <|.. ioAbstractFileBackedByteStream
+ioStreamLifecycle <|.. ioAbstractSessionBackedByteStream
+ioAbstractWritableByteStream <|-- ioFileByteStream
+ioAbstractWritableByteStream <|-- ioFtdiOutputByteStream
+ioAbstractFileBackedByteStream <|-- ioFileByteStream
+ioAbstractSessionBackedByteStream <|-- ioFtdiOutputByteStream
+ioWritableByteStream <|.. ioFileByteStream
+ioWritableByteStream <|.. ioFtdiOutputByteStream
+
+ioFtdiOutputByteStream *-- ioFtdiSession
+
+note right of ioDataBuffer
+Bounded producer-consumer buffer.
+Supports blocking push and pop,
+full and empty synchronization,
+and close-driven draining.
+end note
+
+note top of ioPipelineController
+Implemented in ioLibrary.pipeline and used
+by controller.py pipeline mode.
+Input and output strategies are both
+selected at runtime from config.
+end note
+
+note bottom of ioUsbWriteController
+Assignment role alias: WriteWorker.
+The consumer drains buffered bytes
+to either file or FTDI output through
+ioWritableByteStream.
+end note
+
+note bottom of ioWritableByteStream
+Output sink protocol.
+It extends ioStreamLifecycle and
+separates sink selection from writing.
+end note
+
+note bottom of ioAbstractFileBackedByteStream
+Shared file-handle lifecycle.
+The file sink keeps only append or
+overwrite policy plus write_bytes().
+end note
+@enduml

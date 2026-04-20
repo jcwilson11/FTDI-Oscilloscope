@@ -1,0 +1,40 @@
+@startuml
+title ioScope Scenario View
+autonumber
+
+actor User
+participant "controller.py\nscope-qt" as Bootstrap
+participant ioQtScopeWindow as Window
+participant ioOscilloscopeController as Controller
+participant ioOscilloscopeModel as Model
+participant ioWaveformGenerator as Generator
+participant ioFilterPipeline as Pipeline
+participant ioCompactOscilloscopeView as Compact
+participant ioDetailedOscilloscopeView as Detailed
+
+User -> Bootstrap : python controller.py scope-qt
+Bootstrap -> Window : create host window with two concrete view instances
+Bootstrap -> Controller : create controller with the same views
+Window -> Controller : setActiveView("compact")
+User -> Window : choose source / scale / offset
+Window -> Controller : setInputSource(...), setScale(...), setOffset(...)
+Controller -> Model : update control state
+User -> Window : start acquisition
+Window -> Controller : start()
+Controller -> Model : refreshSamples()
+Model -> Generator : generate(control_state)
+Generator --> Model : raw signal
+Model -> Pipeline : process(raw signal)
+Pipeline --> Model : processed signal
+Controller -> Compact : render(ioRenderState)
+Controller -> Detailed : render(ioRenderState)
+Window -> Window : show active concrete view instance
+Compact --> User : compact UI updated
+Detailed --> User : detailed UI updated
+
+note over Window, Detailed
+Strict MVC interpretation:
+the controller renders both concrete views.
+The Qt window only hosts and switches them.
+end note
+@enduml

@@ -1,0 +1,34 @@
+@startuml
+title ioScope Qt Startup Sequence
+autonumber
+
+actor User
+participant "controller.py" as Bootstrap
+participant "ioQtScopeWindow" as Window
+participant "ioOscilloscopeController" as Controller
+participant "ioOscilloscopeModel" as Model
+participant "ioWaveformGenerator" as Generator
+participant "ioFilterPipeline" as Pipeline
+participant "ioCompactOscilloscopeView" as Compact
+participant "ioDetailedOscilloscopeView" as Detailed
+
+User -> Bootstrap : python controller.py scope-qt
+Bootstrap -> Window : create host window + two concrete views
+Bootstrap -> Controller : create controller with the same view instances
+Window -> Controller : setActiveView("compact")
+User -> Window : click Start
+Window -> Controller : start()
+Controller -> Model : refreshSamples()
+Model -> Generator : generate(control_state)
+Generator --> Model : raw signal
+Model -> Pipeline : process(raw signal)
+Pipeline --> Model : processed signal
+Controller -> Compact : render(ioRenderState)
+Controller -> Detailed : render(ioRenderState)
+Window -> Window : display selected concrete view
+
+note over Window, Detailed
+The window hosts view instances.
+It is not a second abstract View layer.
+end note
+@enduml

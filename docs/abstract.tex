@@ -1,0 +1,182 @@
+This homework document establishes the proposed workspace,
+project tooling, and workflow foundations used throughout
+the course, including Kanban planning and AI-assisted tools I plan to use. 
+
+\begin{longtable}{|l||p{13.5cm}|}
+\caption{Document Update History \label{Table::UpdateHistory}}\\
+\hline
+\textbf{Date} & \textbf{Updates} \\
+\hline
+\endfirsthead
+
+\hline
+\textbf{Date} & \textbf{Updates} \\
+\hline
+\endhead
+
+04/06/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Completed the remaining write-up for the multithreaded pipeline chapter, including expanded diagram references throughout sections \ref{Section::Pipeline Architecture}, \ref{Section::Multithreaded Read Implementation}, \ref{Section::Circular Buffer Design}, \ref{Section::Multithreaded Write Implementation}, and \ref{Section::Command-Line Integration}
+\item Completed section \ref{Section::Source Code and Demo} for the multithreaded pipeline chapter with explanation of \texttt{controller.py pipeline}, \texttt{PipelineController}, shared \texttt{DataBuffer} usage, and demo/source-code references
+\item Finalized the remaining documentation details, demo coverage, and supporting chapter updates for the multithreaded pipeline submission
+\end{itemize}
+\\ \hline
+
+04/05/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Implemented the multithreaded write behavior documented in section \ref{Section::Multithreaded Write Implementation}, including the dedicated \texttt{UsbWriteController} consumer-thread path for buffered output
+\end{itemize}
+\\ \hline
+
+04/03/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Created the multithreaded pipeline chapter structure and its initial subsections, including \ref{Section::Pipeline Architecture}, \ref{Section::Multithreaded Read Implementation}, \ref{Section::Circular Buffer Design}, \ref{Section::Multithreaded Write Implementation}, \ref{Section::Command-Line Integration}, and \ref{Section::UML Diagrams}
+\item Created the dedicated multithreaded write UML reference shown as figure \ref{fig:multithreaded_write_uml}
+\end{itemize}
+\\ \hline
+
+03/25/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Added Appendix A \ref{app: App A} for demo video and GitHub Link
+\item Completed section \ref{Section::Reusable FTDI Library} with finalized analysis of \texttt{ioLibrary}, including purpose, class responsibilities, aggregation rationale, configuration behavior, and alignment between UML and the submitted Python implementation
+\item Completed section \ref{Section::Source Code and Demo} with explanation of main-application integration, shared \texttt{ioBuffer} usage, \texttt{ioRead}/\texttt{ioWrite} configuration, and 1 Hz / 2 Hz LED blink demonstration behavior
+\item Corrected section \ref{Section::Oscilloscope Redesign} to use UML-accurate terminology for interface realization and multiplicity, and aligned the redesign narrative with the implemented MVC and Pipe-and-Filter code structure
+\item Finalized GitHub repository and demo video references for Homework 5 submission materials
+\end{itemize}
+\\ \hline
+
+03/24/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Completed initial redesign work for section \ref{Section::Oscilloscope Redesign}, including the MVC and Pipe-and-Filter architectural decomposition of the oscilloscope system
+\item Created and refined the redesigned UML class diagram shown in figure \ref{fig:oscilloscope_architecture_update}, including \texttt{OscilloscopeController}, \texttt{OscilloscopeModel}, \texttt{OscilloscopeView}, \texttt{FilterPipeline}, \texttt{ISignalFilter}, \texttt{scpScale}, and \texttt{scpOffset}
+\item Organized Chapter \ref{Chapter::Homework 5 - Library Separation} structure and prepared sections \ref{Section::Oscilloscope Redesign}, \ref{Section::Reusable FTDI Library}, and \ref{Section::Source Code and Demo} for final implementation and write-up
+\end{itemize}
+\\ \hline
+
+03/23/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Refactored Requirements section \ref{Section::Requirements} into structured User Requirements format with standardized requirement types, priorities, and improved clarity/testability
+\item Updated Use Cases Chapter \ref{chap:use-cases} to enforce bidirectional traceability, including proper mapping between requirements and use cases and correction of reference labels
+\end{itemize}
+\\ \hline
+
+03/22/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Updated MVC Chapter \ref{Chapter::Homework 4 - Architecture Patterns} with subsection \ref{subsection::MVC Class Diagram} analysis and figure \ref{fig:hw4_mvc_class_diagram.svg}
+\item Updated MVC Chapter \ref{Chapter::Homework 4 - Architecture Patterns} with subsection \ref{subsection::MVC Sequence Diagram} analysis and figure \ref{fig:hw4_mvc_sequence_diagram.svg}
+\item Created Library Separation Chapter \ref{Chapter::Homework 5 - Library Separation} with sections \ref{Section::Oscilloscope Redesign}, \ref{Section::Reusable FTDI Library}, and \ref{Section::Source Code and Demo}
+\end{itemize}
+\\ \hline
+
+03/21/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Finished updating bibliography~\pageref{chap:bibliography} with Systems Architecture at Zappos video
+\item Created Architecture Patterns Chapter \ref{Chapter::Homework 4 - Architecture Patterns} with sections \ref{Section::Pattern for Basic Search Engine Capability}, \ref{Section::Search Engine Design}, and \ref{Section::MVC Analysis and Diagrams}
+
+\end{itemize}
+\\ \hline
+
+03/10/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Finished updating bibliography~\pageref{chap:bibliography} with sources relevant to security, UI/UX, low-power consumption, and figma
+\item Added safety section \ref{subsection::UvSaf} for trade-offs \ref{Section::Trade-offs} 
+\item Section \ref{Section::Figma UI + GitHub links} completed with Figma \& Github links, as well as, screenshots of the initial user interface.
+\item Added detailed step-by-step user examples for usability scenarios \ref{section:usability-scenarios}
+\end{itemize}
+\\ \hline
+
+03/09/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Github repository was updated
+\item Initial user interface was designed using Figma
+\item Section \ref{Section::Figma UI + GitHub links} completed with Figma \& Github links, as well as, screenshots of the initial user interface.
+\end{itemize}
+\\ \hline
+
+03/07/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Sections \ref{section:usability-scenarios} and \ref{Section::Trade-offs} completed
+\item Updated index with new terms relevant to Chapter \ref{Chapter::Homework 3 - Usability} on page~\pageref{chap:index}
+\end{itemize}
+\\ \hline
+
+03/06/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Created Chapter \ref{Chapter::Homework 3 - Usability} along with sections \ref{Section::Networking Context}, \ref{section:usability-scenarios}, \ref{Section::Trade-offs}, \ref{Section::Usability comparison using response measures}, \ref{Section::Energy efficiency design}, and \ref{Section::Figma UI + GitHub links} to continue FTDI architecture design
+\item Re-imported bibliography on page~\pageref{chap:bibliography}
+\item Sections \ref{Section::Networking Context} and \ref{section:usability-scenarios} completed
+\item Created GitHub Repository and Figma accounts to use in \ref{Section::Figma UI + GitHub links}
+\end{itemize}
+\\ \hline
+
+03/01/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Updated Chapter~\ref{chap:crc-and-classes} section ~\ref{Section::FTDI Design} --  FTDI design
+\end{itemize}
+\\ \hline
+
+02/28/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item created Chapter~\ref{chap:crc-and-classes} -- Crc and Classes
+\item Updated Chapter~\ref{chap:use-cases} -- Use Cases, Section ~\ref{sec:activity-uc1} -- UC-1 Diagram
+\end{itemize}
+\\ \hline
+
+02/27/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Created Section~\ref{Chapter::Homework 2 - Oscilloscope} -- Requirements
+\item Created Chapter~\ref{chap:use-cases} -- Use Cases
+\end{itemize}
+\\ \hline
+
+02/20/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Added placeholders for the Use Case, Object, and Class diagram
+\item Added Use Case diagram \ref{fig:usecase}, Object diagram \ref{fig:object}, and Class diagram \ref{fig:class}
+\item Added rationale for Use Case diagram \ref{subsection::usecase}, Object diagram \ref{subsection::object}, and Class diagram \ref{subsection::Class}
+\end{itemize}
+\\ \hline
+
+02/19/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Created section for exercise \ref{Section::Exercise 4.5}
+
+\end{itemize}
+\\ \hline
+
+02/17/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Created sections with exercises  \ref{Section::Exercise 4.1}, \ref{Section::Exercise 4.2}, and \ref{Section::Exercise 4.3}.
+\end{itemize}
+\\ \hline
+
+02/17/2026 & 
+JW, EK, NS:
+\begin{itemize}[topsep=0pt,itemsep=0pt,parsep=0pt,partopsep=0pt,leftmargin=12pt]
+\item Created section for exercise \ref{Section::Class Diagram Python Implementation}
+\item Exercises \ref{Section::Exercise 4.1}, \ref{Section::Exercise 4.2},  \ref{Section::Exercise 4.3}, and \ref{Section::Class Diagram Python Implementation} completed; Ready for submission
+\end{itemize}
+\\ \hline
+
+\end{longtable}
+
+
+

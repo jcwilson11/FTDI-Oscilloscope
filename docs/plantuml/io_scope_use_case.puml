@@ -1,0 +1,26 @@
+@startuml
+left to right direction
+
+actor "Presenter" as Presenter
+rectangle "ioScope Demo" {
+  usecase "Launch Qt oscilloscope" as UC1
+  usecase "Launch CLI shell" as UC2
+  usecase "Switch between two Qt UIs" as UC3
+  usecase "Display waveform" as UC4
+  usecase "Apply scale / offset pipeline" as UC5
+  usecase "Acquire waveform from FTDI" as UC6
+  usecase "Run multithreaded FTDI pipeline" as UC7
+}
+
+Presenter --> UC1
+Presenter --> UC2
+Presenter --> UC3
+Presenter --> UC4
+Presenter --> UC5
+Presenter --> UC6
+Presenter --> UC7
+UC1 .> UC3 : includes
+UC1 .> UC4 : includes
+UC1 .> UC5 : includes
+UC1 .> UC6 : includes
+@enduml

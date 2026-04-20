@@ -1,32 +1,29 @@
-class ioFileInputByteStream:
+from __future__ import annotations
+
+from .io_abstract_file_backed_byte_stream import ioAbstractFileBackedByteStream
+from .io_abstract_readable_byte_stream import ioAbstractReadableByteStream
+
+
+class ioFileInputByteStream(ioAbstractReadableByteStream, ioAbstractFileBackedByteStream):
     def __init__(self, input_path: str):
         self.input_path = input_path
-        self.file_handle = None
-        self.connected = False
+        self.exhausted = False
+        super().__init__(input_path)
+
+    def _open_mode(self) -> str:
+        return "rb"
+
+    def _after_open(self) -> None:
         self.exhausted = False
 
-    def open(self) -> None:
-        self.file_handle = open(self.input_path, "rb")
-        self.connected = True
-        self.exhausted = False
+    def _has_active_read_target(self) -> bool:
+        return self.file_handle is not None
 
-    def close(self) -> None:
-        if self.file_handle:
-            self.file_handle.close()
-            self.file_handle = None
-        self.connected = False
-
-    def read_bytes(self, count: int) -> bytes:
-        if not self.connected or self.file_handle is None:
-            raise RuntimeError("Input stream is not open.")
-
+    def _read_bytes_impl(self, count: int) -> bytes:
         data = self.file_handle.read(count)
         if not data:
             self.exhausted = True
         return data
-
-    def is_connected(self) -> bool:
-        return self.connected
 
     def is_exhausted(self) -> bool:
         return self.exhausted

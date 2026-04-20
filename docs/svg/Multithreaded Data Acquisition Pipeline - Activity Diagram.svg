@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="920" viewBox="0 0 1400 920">
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#223047"/>
+    </marker>
+    <style>
+      .title { font: 700 26px Arial, sans-serif; fill: #162033; }
+      .lane { fill: #f4f7fb; stroke: #b8c4d6; stroke-width: 2; }
+      .lane-label { font: 700 20px Arial, sans-serif; fill: #223047; }
+      .step { fill: #ffffff; stroke: #4b5f7a; stroke-width: 2; rx: 14; ry: 14; }
+      .decision { fill: #fff8e8; stroke: #8b6a26; stroke-width: 2; }
+      .text { font: 16px Arial, sans-serif; fill: #223047; }
+      .small { font: 15px Arial, sans-serif; fill: #223047; }
+      .line { stroke: #223047; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+    </style>
+  </defs>
+
+  <text x="700" y="40" text-anchor="middle" class="title">Multithreaded Data Acquisition Pipeline - Activity Diagram</text>
+
+  <rect x="40" y="70" width="300" height="810" class="lane"/>
+  <rect x="360" y="70" width="300" height="810" class="lane"/>
+  <rect x="680" y="70" width="300" height="810" class="lane"/>
+  <rect x="1000" y="70" width="360" height="810" class="lane"/>
+
+  <text x="190" y="105" text-anchor="middle" class="lane-label">PipelineController</text>
+  <text x="510" y="105" text-anchor="middle" class="lane-label">ReadWorker</text>
+  <text x="830" y="105" text-anchor="middle" class="lane-label">CircularBuffer</text>
+  <text x="1180" y="105" text-anchor="middle" class="lane-label">WriteWorker</text>
+
+  <ellipse cx="190" cy="150" rx="34" ry="24" fill="#d9f2df" stroke="#3b7d4f" stroke-width="2"/>
+  <text x="190" y="156" text-anchor="middle" class="text">Start</text>
+
+  <rect x="90" y="190" width="200" height="80" class="step"/>
+  <text x="190" y="225" text-anchor="middle" class="text">Parse CLI config</text>
+  <text x="190" y="248" text-anchor="middle" class="text">Create buffer and sink</text>
+
+  <rect x="90" y="305" width="200" height="80" class="step"/>
+  <text x="190" y="340" text-anchor="middle" class="text">Start read thread</text>
+  <text x="190" y="363" text-anchor="middle" class="text">Start write thread</text>
+
+  <rect x="410" y="190" width="200" height="80" class="step"/>
+  <text x="510" y="225" text-anchor="middle" class="text">Read chunk from</text>
+  <text x="510" y="248" text-anchor="middle" class="text">FTDI input device</text>
+
+  <polygon points="510,325 590,385 510,445 430,385" class="decision"/>
+  <text x="510" y="380" text-anchor="middle" class="text">Read</text>
+  <text x="510" y="402" text-anchor="middle" class="text">success?</text>
+
+  <rect x="720" y="190" width="220" height="80" class="step"/>
+  <text x="830" y="225" text-anchor="middle" class="text">Buffer enforces</text>
+  <text x="830" y="248" text-anchor="middle" class="text">bounded capacity</text>
+
+  <polygon points="830,325 910,385 830,445 750,385" class="decision"/>
+  <text x="830" y="380" text-anchor="middle" class="text">Buffer</text>
+  <text x="830" y="402" text-anchor="middle" class="text">full?</text>
+
+  <rect x="720" y="470" width="220" height="80" class="step"/>
+  <text x="830" y="505" text-anchor="middle" class="text">Wait for</text>
+  <text x="830" y="528" text-anchor="middle" class="text">not_full condition</text>
+
+  <rect x="720" y="585" width="220" height="80" class="step"/>
+  <text x="830" y="620" text-anchor="middle" class="text">Push chunk</text>
+  <text x="830" y="643" text-anchor="middle" class="text">into circular buffer</text>
+
+  <polygon points="1180,210 1260,270 1180,330 1100,270" class="decision"/>
+  <text x="1180" y="265" text-anchor="middle" class="text">Buffer</text>
+  <text x="1180" y="287" text-anchor="middle" class="text">empty?</text>
+
+  <rect x="1070" y="360" width="220" height="80" class="step"/>
+  <text x="1180" y="395" text-anchor="middle" class="text">Wait for</text>
+  <text x="1180" y="418" text-anchor="middle" class="text">not_empty condition</text>
+
+  <rect x="1070" y="480" width="220" height="80" class="step"/>
+  <text x="1180" y="515" text-anchor="middle" class="text">Pop next chunk</text>
+  <text x="1180" y="538" text-anchor="middle" class="text">from buffer</text>
+
+  <polygon points="1180,600 1270,665 1180,730 1090,665" class="decision"/>
+  <text x="1180" y="660" text-anchor="middle" class="text">Destination</text>
+  <text x="1180" y="682" text-anchor="middle" class="text">type?</text>
+
+  <rect x="1030" y="760" width="130" height="70" class="step"/>
+  <text x="1095" y="792" text-anchor="middle" class="small">Write to</text>
+  <text x="1095" y="815" text-anchor="middle" class="small">FileSink</text>
+
+  <rect x="1200" y="760" width="130" height="70" class="step"/>
+  <text x="1265" y="792" text-anchor="middle" class="small">Write to</text>
+  <text x="1265" y="815" text-anchor="middle" class="small">FtdiSink</text>
+
+  <rect x="90" y="730" width="200" height="90" class="step"/>
+  <text x="190" y="765" text-anchor="middle" class="text">Stop reader</text>
+  <text x="190" y="788" text-anchor="middle" class="text">Close buffer</text>
+  <text x="190" y="811" text-anchor="middle" class="text">Join threads and close sinks</text>
+
+  <ellipse cx="190" cy="855" rx="34" ry="24" fill="#f7dbdb" stroke="#9a4545" stroke-width="2"/>
+  <text x="190" y="861" text-anchor="middle" class="text">Stop</text>
+
+  <path d="M190 174 L190 190" class="line"/>
+  <path d="M190 270 L190 305" class="line"/>
+  <path d="M290 345 L410 345" class="line"/>
+  <path d="M510 270 L510 325" class="line"/>
+  <path d="M590 385 L720 385" class="line"/>
+  <path d="M830 270 L830 325" class="line"/>
+  <path d="M830 445 L830 470" class="line"/>
+  <path d="M830 550 L830 585" class="line"/>
+  <path d="M940 625 L1070 625" class="line"/>
+  <path d="M1180 330 L1180 360" class="line"/>
+  <path d="M1180 440 L1180 480" class="line"/>
+  <path d="M1180 560 L1180 600" class="line"/>
+  <path d="M1145 730 L1095 760" class="line"/>
+  <path d="M1215 730 L1265 760" class="line"/>
+  <path d="M1095 830 L290 830" class="line"/>
+  <path d="M1265 830 L290 830" class="line"/>
+  <path d="M190 820 L190 855" class="line"/>
+
+  <text x="645" y="372" text-anchor="middle" class="small">yes</text>
+  <text x="860" y="462" text-anchor="start" class="small">yes</text>
+  <text x="865" y="575" text-anchor="start" class="small">space available</text>
+  <text x="1205" y="350" text-anchor="start" class="small">yes</text>
+  <text x="1210" y="462" text-anchor="start" class="small">data available</text>
+  <text x="1120" y="747" text-anchor="middle" class="small">file</text>
+  <text x="1240" y="747" text-anchor="middle" class="small">FTDI</text>
+  <text x="460" y="465" text-anchor="middle" class="small">no - request shutdown</text>
+</svg>
