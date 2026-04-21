@@ -371,78 +371,201 @@ The current branch implements the required one-buffer producer-consumer design. 
 
 \subsection{Live Acquisition Integration}
 In live oscilloscope mode, \texttt{ioLiveOscilloscopeSession} creates the input stream, the optional tee-output stream, the transfer configuration, and the \texttt{ioPipelineController}. This keeps the live sampling path aligned with the assignment's multithreaded circular-buffer requirement while still preserving MVC separation.
+\providecommand{\ioArchitectureSvgFigure}[4]{
+\begin{figure}[H]
+    \centering
+    \IfFileExists{svg/#1}{
+        \includesvg[width=#4\linewidth]{svg/#1}
+    }{
+        \fbox{
+            \parbox{0.82\textwidth}{
+                \centering
+                \textbf{Diagram asset missing.} Expected SVG file: \texttt{svg/#1}.
+            }
+        }
+    }
+    \caption{#2}
+    \label{#3}
+\end{figure}
+}
 
 \section{4+1 Diagram Set \\
 \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
 \index{Section!4+1 Diagram Set}
 \label{Section::4+1 Diagram Set}
 
-\begin{itemize}
-    \item \texttt{docs/plantuml/io\_scope\_logical\_class.puml} \\
-    Purpose: Canonical logical class view showing the implemented classes and their relationships.
+The architecture diagram set is documented with the submitted SVG assets only. Figures~\ref{fig:qt_mvc}, \ref{fig:signal_flow}, \ref{fig:logical_view}, \ref{fig:process_view}, \ref{fig:deployment_view}, \ref{fig:activity_view}, \ref{fig:use_case_view}, \ref{fig:scenario_view_8_1}, and \ref{fig:scenario_view_8_2} together cover the Qt MVC structure, signal flow, logical grouping, process behavior, deployment structure, activity flow, use cases, and two scenario sequences.
 
-    \item \texttt{docs/plantuml/io\_scope\_logical\_class\_readable.puml} \\
-    Purpose: Readable logical class view with short human-language responsibilities for grading and presentation.
+\subsection{Qt MVC Diagram}
+\index{Section!Qt MVC Diagram}
+\label{Section::Qt MVC Diagram}
 
-    \begin{figure}[!htbp]
-      \centering
-      \IfFileExists{svg/io_scope_process.svg}{
-        \includesvg[width=1.0\linewidth]{svg/io_scope_process.svg}
-      }
-      \caption{Process View}
-      \label{fig:io_scope_process}
-    \end{figure}
-    Purpose: Process view showing the FTDI read thread, shared circular buffer, write thread, and live-session interaction.
+\ioArchitectureSvgFigure{1_qt_mvc.svg}{Qt MVC class slice}{fig:qt_mvc}{1.0}
 
-    \item \texttt{docs/plantuml/io\_scope\_development.puml} \\
-    Purpose: Development view showing the package and file organization of the current codebase.
+Figure~\ref{fig:qt_mvc} is the primary Qt MVC class slice. It explains the controller, model, view hierarchy, host window, render-state handoff, theme hierarchy, and live-session attachment used by the Qt oscilloscope path.
 
-    \begin{figure}[!htbp]
-      \centering
-      \IfFileExists{svg/io_scope_physical.svg}{
-        \includesvg[width=1.0\linewidth]{svg/io_scope_physical.svg}
-      }
-      \caption{Physical View}
-      \label{fig:io_scope_physical}
-    \end{figure}
-    Purpose: Physical view showing the runtime environment, FTDI DLL dependency, and hardware deployment context.
+\begin{enumerate}
+    \item This diagram is the primary Qt MVC class slice. \texttt{ioOscilloscopeController} is the controller class, \texttt{ioOscilloscopeModel} is the model class, and \texttt{ioOscilloscopeView} is the single abstract View class for the Qt path.
+    \item The two selectable Qt user interfaces are modeled through inheritance. \texttt{ioCompactOscilloscopeView} and \texttt{ioDetailedOscilloscopeView} are concrete subclasses of the abstract class \texttt{ioOscilloscopeView}.
+    \item \texttt{ioQtScopeWindow} is a host-shell class, not a second View abstraction. It owns view-instance selection and visibility, then forwards user actions into the controller.
+    \item The model class aggregates state and processing context. \texttt{ioControlState} and \texttt{ioViewportState} hold user-facing state, while \texttt{ioFilterPipeline} and \texttt{ioWaveformGenerator} stay behind the model boundary.
+    \item The render handoff is made explicit through \texttt{ioRenderState}. That keeps rendering data separate from controller orchestration and helps the View layer stay presentation-focused.
+    \item The theme path is also an inheritance hierarchy. \texttt{ioViewTheme} is the abstract contract, \texttt{ioStaticThemeBase} is an abstract shared base, and \texttt{ioPortraitTheme} plus \texttt{ioLandscapeTheme} are concrete subclasses.
+    \item \texttt{ioLiveOscilloscopeSession} is attached to the controller rather than the View. That keeps live acquisition as application behavior instead of UI behavior.
+\end{enumerate}
 
-    \begin{figure}[!htbp]
-      \centering
-      \IfFileExists{svg/io_scope_scenario_sequence.svg}{
-        \includesvg[width=1.0\linewidth]{svg/io_scope_scenario_sequence.svg}
-      }
-      \caption{Scenario Sequence}
-      \label{fig:io_scope_scenario_sequence}
-    \end{figure}
-    Purpose: Scenario view showing the user flow from startup through selection, processing, and rendering.
-\end{itemize}
+\subsection{Signal Flow Diagram}
+\index{Section!Signal Flow Diagram}
+\label{Section::Signal Flow Diagram}
 
+\ioArchitectureSvgFigure{2_signal_flow.svg}{Signal flow and live acquisition class slice}{fig:signal_flow}{1.0}
+
+Figure~\ref{fig:signal_flow} narrows the architecture to live acquisition, waveform source selection, byte-stream abstraction, and filter-pipeline processing.
+
+\begin{enumerate}
+    \item This class slice shows how live acquisition and waveform processing stay behind the MVC boundary. \texttt{ioOscilloscopeController} owns session startup and shutdown, while \texttt{ioOscilloscopeModel} owns waveform data and the active processing pipeline.
+    \item \texttt{ioLiveOscilloscopeSession} is the coordinating class for live acquisition. It owns the pipeline-related helper classes and keeps that behavior outside the View layer.
+    \item The filter design is modeled with both interface and inheritance. \texttt{ioSignalFilter} is the interface, \texttt{ioSampleMappingFilterBase} is the abstract class for shared mapping logic, and \texttt{ioScaleFilter} plus \texttt{ioOffsetFilter} are concrete subclasses.
+    \item \texttt{ioFilterPipeline} depends on the filter interface rather than on one fixed concrete filter class. That means the processing chain is extensible without rewriting the pipeline class.
+    \item Source selection follows the same UML pattern. \texttt{ioSignalSource} is the interface, and \texttt{ioGeneratedWaveformSource}, \texttt{ioFileWaveformSource}, and \texttt{ioFtdiWaveformSource} are alternative concrete implementations.
+    \item \texttt{ioWaveformGenerator} acts as the selector for the active signal-source instance. It chooses which source participates at runtime while the model stays at the abstraction level.
+    \item The byte-stream side is expressed through interfaces as well. \texttt{ioReadableByteStream} and \texttt{ioWritableByteStream} define the stream contracts, while helper classes such as \texttt{ioTappedReadableByteStream} and \texttt{ioNullWritableByteStream} participate around those abstractions.
+    \item \texttt{ioFtdiWaveformSource} is the concrete class that bridges signal acquisition into the FTDI stream layer by depending on \texttt{ioFtdiByteStream}.
+\end{enumerate}
+
+\subsection{Logical View Diagram}
+\index{Section!Logical View Diagram}
+\label{Section::Logical View Diagram}
+
+\ioArchitectureSvgFigure{3_logical_view.svg}{Logical architecture overview}{fig:logical_view}{1.0}
+
+Figure~\ref{fig:logical_view} is the top-level logical overview. It groups the system into architectural subsystems and shows the dependency direction between those groups.
+
+\begin{enumerate}
+    \item This is the top-level logical overview, so it is intentionally more architectural than class-by-class. The rounded rectangles are subsystem groupings rather than full detailed class declarations.
+    \item The bootstrap group contains the entry-point classes and verification helpers, including \texttt{ioScopeShell}, \texttt{ioPipelineCli}, \texttt{ioLegacyFtdiCli}, and \texttt{ioFileComparator}.
+    \item The Qt MVC group is the primary user-interface subsystem. Its detailed abstract-class and inheritance structure is intentionally moved into the companion MVC slice so this overview stays readable.
+    \item The signal-flow group and live-acquisition group are separated on purpose. One group handles waveform-processing strategy, while the other group handles live-session behavior and tee-history capture.
+    \item The transfer-pipeline group represents the required producer-consumer design. It connects the live acquisition subsystem to the FTDI stream subsystem through the multithreaded buffer path.
+    \item The FTDI streams and session group is the hardware-facing layer. It contains the deployed stream and device classes that the upper logical subsystems depend on.
+    \item The dependency arrows communicate architectural direction between subsystems. They show who depends on whom, while the detailed class inheritance and interface realization relationships remain in the focused companion diagrams.
+\end{enumerate}
+
+\subsection{Process View Diagram}
+\index{Section!Process View Diagram}
+\label{Section::Process View Diagram}
+
+\ioArchitectureSvgFigure{4_process_view.svg}{Process view}{fig:process_view}{1.0}
+
+Figure~\ref{fig:process_view} shows the concurrent runtime structure of the oscilloscope system. It separates the Qt UI thread from the background transfer workers.
+
+\begin{enumerate}
+    \item This is a UML process view, so the emphasis shifts from classes to concurrent runtime components.
+    \item The \texttt{Qt UI Thread} rectangle contains the UI-facing component instances: the host window, the two concrete view components, the controller, the model, the live session, the pipeline controller, the filter pipeline, and the waveform generator.
+    \item The two background worker contexts are modeled explicitly as separate thread regions. \texttt{ioUsbReadController} lives in the read thread, and \texttt{ioUsbWriteController} lives in the write thread.
+    \item \texttt{ioDataBuffer} is drawn as a queue instance because it is the shared runtime handoff point between the producer and consumer threads. This is the concrete concurrent buffer instance that makes the pipeline work.
+    \item The controller component still acts as the orchestration center at runtime. It updates model state, starts and stops the live session, and dispatches rendering to the selected concrete Qt view component.
+    \item The read-side and write-side stream endpoints are modeled as runtime components behind the worker controllers. That keeps the thread roles clear: one side produces bytes into the queue, and the other consumes bytes out of it.
+\end{enumerate}
+
+\subsection{Deployment View Diagram}
+\index{Section!Deployment View Diagram}
+\label{Section::Deployment View Diagram}
+
+\ioArchitectureSvgFigure{5_deployment View.svg}{Deployment view}{fig:deployment_view}{1.0}
+
+Figure~\ref{fig:deployment_view} describes how the software artifacts, runtime libraries, configuration files, display output, USB bus, and FTDI devices are deployed.
+
+\begin{enumerate}
+    \item This is the UML deployment view. The main concept here is not inheritance but deployment across nodes, artifacts, and external devices.
+    \item The \texttt{Windows Host} node contains the deployed software artifacts for the project: the Python runtime, the controller artifact, the oscilloscope package, the ioLibrary package, the Qt libraries, and the FTDI driver interface.
+    \item \texttt{io\_scope\_settings.json} is modeled as a database-style artifact because it persists runtime configuration, while the sample input is modeled as a file artifact because it represents an input resource rather than an executing component.
+    \item The \texttt{Display} node hosts the \texttt{Qt window} artifact. That makes the UI deployment boundary explicit and separates the visible interface from the host software stack.
+    \item The \texttt{USB Bus} node captures the hardware-facing side of the deployment. The FTDI read device is the primary external device artifact, and the FTDI write device is shown as an optional artifact for single-buffer transfer mode.
+    \item The deployment links show which host artifacts depend on which libraries and external endpoints. For example, the oscilloscope package depends on \texttt{PySide6}, \texttt{pyqtgraph}, settings storage, file input, and the visible UI artifact.
+    \item The ioLibrary package is the artifact that bridges software into the FTDI hardware layer. It depends on \texttt{ftd2xx.dll / D2XX} and communicates with the FTDI device artifacts on the USB bus.
+\end{enumerate}
+
+\subsection{Activity View Diagram}
+\index{Section!Activity View Diagram}
+\label{Section::Activity View Diagram}
+
+\ioArchitectureSvgFigure{6_activity_view.svg}{Required activity view}{fig:activity_view}{1.0}
+
+Figure~\ref{fig:activity_view} documents the required pipeline activity flow. It focuses on initialization, read-side behavior, shared buffer coordination, write-side behavior, and shutdown.
+
+\begin{enumerate}
+    \item This activity view shows the end-to-end producer-consumer behavior required by the oscilloscope transfer path.
+    \item The swimlanes separate the responsibilities of \texttt{ioPipelineController}, \texttt{ioUsbReadController}, \texttt{ioDataBuffer}, and \texttt{ioUsbWriteController}.
+    \item Initialization starts by parsing configuration, creating \texttt{ioDataBuffer}, selecting the readable and writable stream implementations, and starting the read and write controller threads.
+    \item The reader thread chooses between file input and FTDI input, reads byte chunks from the selected source, and reacts to stop requests, exhausted input, missing bytes, and failure cases.
+    \item The buffer lane shows the synchronization boundary. The reader waits when the buffer is full, pushes byte chunks when capacity is available, and closes the buffer when the writer must drain or stop.
+    \item The writer thread waits when the buffer is empty, pops byte chunks when data is available, and writes those chunks to the selected output stream.
+    \item Shutdown is explicit: the controller requests the reader stop, closes the buffer, requests the writer stop, joins both worker threads, and lets the writer close the selected output stream during stop.
+\end{enumerate}
+
+\subsection{Use Case Diagram}
+\index{Section!Use Case Diagram}
+\label{Section::Use Case Diagram}
+
+\ioArchitectureSvgFigure{7_use_case.svg}{Required use case view}{fig:use_case_view}{1.0}
+
+Figure~\ref{fig:use_case_view} shows the user-visible behavior of the system from the presenter actor's point of view.
+
+\begin{enumerate}
+    \item The actor is the presenter, and the system boundary is the \texttt{ioScope Demo}.
+    \item The presenter can launch the Qt oscilloscope and can also launch the CLI shell. These are separate entry points because the graphical demo and command-line pipeline demo are separate user workflows.
+    \item Launching the Qt oscilloscope includes switching between the two Qt user interfaces, displaying a waveform, applying the scale-and-offset pipeline, and acquiring a waveform from FTDI.
+    \item FTDI acquisition connects to the multithreaded FTDI pipeline use case. That relationship keeps the visible oscilloscope behavior tied to the required backend transfer behavior.
+    \item Switching between two Qt user interfaces is modeled as a user-facing capability, not as an implementation detail. This matches the design shown in Figure~\ref{fig:qt_mvc}, where the two concrete views share one abstract View contract.
+    \item The use-case view intentionally avoids internal class details. Those details are covered in the class and runtime views shown in Figures~\ref{fig:qt_mvc}, \ref{fig:signal_flow}, and \ref{fig:process_view}.
+\end{enumerate}
+
+\subsection{Scenario View 8.1 Diagram}
+\index{Section!Scenario View 8.1 Diagram}
+\label{Section::Scenario View 8.1 Diagram}
+
+\ioArchitectureSvgFigure{8.1_scenario view.svg}{Scenario view 8.1: start FTDI session with tee-to-file}{fig:scenario_view_8_1}{1.0}
+
+Figure~\ref{fig:scenario_view_8_1} shows the start sequence for an FTDI live session that also tees captured bytes to a file.
+
+\begin{enumerate}
+    \item The scenario begins when the user clicks Start in the Qt window. \texttt{ioQtScopeWindow} forwards that request to \texttt{ioOscilloscopeController}.
+    \item The controller refreshes samples and enters its live-session startup path before delegating to \texttt{ioLiveOscilloscopeSession}.
+    \item \texttt{ioLiveOscilloscopeSession} builds the input stream from the FTDI settings, creates the \texttt{ioFtdiByteStream}, and wraps that input with \texttt{ioTappedReadableByteStream} so sample history can be captured while bytes continue through the transfer path.
+    \item The same session builds the output stream from the tee settings. In this scenario, the tee output is a file stream for \texttt{demo\_ftdi\_capture.bin}.
+    \item The session creates \texttt{ioPipelineConfig}, creates \texttt{ioPipelineController} with the tapped input and file output, and starts the pipeline.
+    \item Starting the pipeline starts the writer thread and then the reader thread. This matches the producer-consumer activity shown in Figure~\ref{fig:activity_view}.
+    \item After startup, the controller appends a session-start event, renders an \texttt{ioRenderState}, and the detailed Qt view shows FTDI plus tee-to-file status.
+\end{enumerate}
+
+\subsection{Scenario View 8.2 Diagram}
+\index{Section!Scenario View 8.2 Diagram}
+\label{Section::Scenario View 8.2 Diagram}
+
+\ioArchitectureSvgFigure{8.2_scenario view.svg}{Scenario view 8.2: Qt startup, configuration, processing, and render refresh}{fig:scenario_view_8_2}{1.0}
+
+Figure~\ref{fig:scenario_view_8_2} shows the normal Qt startup and rendering scenario, including view creation, control updates, waveform generation, filtering, and render dispatch.
+
+\begin{enumerate}
+    \item The scenario begins with \texttt{python controller.py scope-qt}. That command creates \texttt{ioQtScopeWindow} with the two concrete view instances.
+    \item The controller is created with the same views, then the compact view is selected as the active view through \texttt{setActiveView("compact")}.
+    \item The user chooses the source, scale, and offset. The window forwards these selections to the controller through \texttt{setInputSource(...)}, \texttt{setScale(...)}, and \texttt{setOffset(...)}.
+    \item The controller updates \texttt{ioOscilloscopeModel} so that the user-facing control state stays behind the model boundary.
+    \item When acquisition starts, the controller asks the model to refresh samples. The model delegates source selection to \texttt{ioWaveformGenerator}.
+    \item The waveform generator returns the raw signal, and \texttt{ioFilterPipeline} processes that signal through the active scale and offset filters.
+    \item The controller renders the resulting \texttt{ioRenderState} to both concrete view instances. The host window then shows the active concrete view instance.
+    \item The scenario ends with both the compact and detailed UI instances updated. This reinforces the design in Figure~\ref{fig:qt_mvc}: there are two concrete Qt interfaces, but they are coordinated through one controller and one shared View abstraction.
+\end{enumerate}
 
 \section{Class Diagram \\
 \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
 \index{Section!Class Diagram}
 \label{Section::Class Diagram}
 
-The canonical class diagram for this assignment is the logical class view in \texttt{docs/plantuml/io\_scope\_logical\_class.puml}. The readable grading version is \texttt{docs/plantuml/io\_scope\_logical\_class\_readable.puml}.
+The class architecture for this assignment is documented by the focused SVG figures in Section~\ref{Section::4+1 Diagram Set}. Figure~\ref{fig:qt_mvc} is the primary Qt MVC class slice, Figure~\ref{fig:signal_flow} covers signal processing and live acquisition classes, and Figure~\ref{fig:logical_view} provides the top-level logical grouping used to relate those slices to the rest of the system.
 
-\begin{figure}[H]
-    \centering
-    \IfFileExists{plantuml/io_scope_logical_class_readable.png}{
-        \includegraphics[height=0.8\textheight]{plantuml/io_scope_logical_class_readable.png}
-    }{
-        \fbox{
-            \parbox{0.82\textwidth}{
-                \textbf{Class diagram asset note.} The submitted source-of-truth class diagrams are the PlantUML files
-                \texttt{docs/plantuml/io\_scope\_logical\_class.puml} and
-                \texttt{docs/plantuml/io\_scope\_logical\_class\_readable.puml}. If a rendered PNG is not present in the build
-                directory, those PlantUML sources remain the authoritative architecture artifacts for the submission.
-            }
-        }
-    }
-    \caption{Class diagram for the current oscilloscope system architecture}
-    \label{fig:class_diagram}
-\end{figure}
+Together, these class-oriented diagrams show the required one abstract Qt View boundary, two concrete selectable Qt user interfaces, the model-owned processing pipeline, the controller-owned live session, and the FTDI stream abstractions used by the live acquisition path.
 
 \section{AI Prompt and Generated Output \\
 \small{\textit{-- Joris Wilson, Eva Kemp, and Nica Saoi}}}
@@ -487,3 +610,4 @@ The execution of the program, including the file-to-file demonstration path and 
 \label{Section::Conclusion}
 
 The current oscilloscope architecture satisfies the assignment's main design goals while matching the implemented codebase and diagrams. The system preserves one abstract View boundary, provides two selectable Qt user interfaces, keeps scale and shift in the filter pipeline, isolates FTDI communication in the backend stream hierarchy, and uses a real multithreaded circular-buffer transfer path for acquisition and output.
+
