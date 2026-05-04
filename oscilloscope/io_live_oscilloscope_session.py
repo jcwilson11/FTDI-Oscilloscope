@@ -26,7 +26,8 @@ class ioLiveOscilloscopeSession:
 
     def start(self, control_state: ioControlState, *, history_size: int = 4096) -> None:
         self.stop()
-        self.history = ioLiveSampleHistory(max_samples=history_size)
+        bit_index = control_state.ftdi_input_bit_index if control_state.input_source.startswith("ftdi") else None
+        self.history = ioLiveSampleHistory(max_samples=history_size, bit_index=bit_index)
 
         input_stream = ioTappedReadableByteStream(
             self._build_input_stream(control_state),
@@ -76,6 +77,7 @@ class ioLiveOscilloscopeSession:
             return ioFtdiByteStream(
                 device_index=control_state.ftdi_input_device_index,
                 dll_path=control_state.ftdi_dll_path or None,
+                prefer_latest=True,
             )
         if control_state.input_source.startswith("file:"):
             return ioLiveFileTailByteStream(control_state.live_file_path)
@@ -92,7 +94,10 @@ class ioLiveOscilloscopeSession:
         return ioFileByteStream(control_state.tee_output_path, append=False)
 
     def _build_pipeline_config(self, control_state: ioControlState) -> ioPipelineConfig:
-        chunk_size = max(1, min(control_state.ftdi_bytes_per_read, 64))
+        if control_state.input_source.startswith("ftdi"):
+            chunk_size = 1
+        else:
+            chunk_size = max(1, min(control_state.ftdi_bytes_per_read, 8))
         loop_hz = 1.0 / max(control_state.sample_time_seconds * chunk_size, 0.01)
         loop_hz = max(5.0, min(200.0, loop_hz))
         buffer_capacity = max(1024, chunk_size * 4)

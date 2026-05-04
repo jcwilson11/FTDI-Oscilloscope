@@ -101,6 +101,7 @@ class ioDetailedOscilloscopeView(ioOscilloscopeView, _QtWidgetBase, metaclass=io
             f"UI: {self.title}",
             f"Theme: {snapshot.get('theme_name', 'n/a')} ({snapshot.get('orientation', 'n/a')})",
             f"Source: {snapshot.get('input_source', 'n/a')}",
+            f"FTDI Bit: D{snapshot.get('ftdi_input_bit_index', 0)}",
             f"Session: {snapshot.get('session_mode', 'idle')}",
             f"Running: {snapshot.get('running', False)}",
             f"Scale: {snapshot.get('scale', 1.0):.2f}",

@@ -15,6 +15,7 @@ class ioControlState:
     active_theme: str = "portrait"
     active_view: str = "compact"
     ftdi_input_device_index: int = 0
+    ftdi_input_bit_index: int = 0
     ftdi_output_device_index: int = 0
     ftdi_bytes_per_read: int = 256
     ftdi_dll_path: str = ""

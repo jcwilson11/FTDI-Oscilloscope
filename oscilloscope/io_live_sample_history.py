@@ -7,11 +7,12 @@ import threading
 class ioLiveSampleHistory:
     """Thread-safe rolling byte history used for live waveform rendering."""
 
-    def __init__(self, max_samples: int = 4096):
+    def __init__(self, max_samples: int = 4096, bit_index: int | None = None):
         self._max_samples = max(32, int(max_samples))
         self._samples = deque(maxlen=self._max_samples)
         self._total_samples = 0
         self._lock = threading.Lock()
+        self._bit_index = None if bit_index is None else max(0, min(int(bit_index), 7))
 
     def clear(self) -> None:
         with self._lock:
@@ -22,7 +23,11 @@ class ioLiveSampleHistory:
         if not payload:
             return
 
-        normalized = [((byte / 255.0) * 2.0) - 1.0 for byte in payload]
+        if self._bit_index is None:
+            normalized = [((byte / 255.0) * 2.0) - 1.0 for byte in payload]
+        else:
+            mask = 1 << self._bit_index
+            normalized = [1.0 if byte & mask else -1.0 for byte in payload]
         with self._lock:
             self._samples.extend(normalized)
             self._total_samples += len(normalized)

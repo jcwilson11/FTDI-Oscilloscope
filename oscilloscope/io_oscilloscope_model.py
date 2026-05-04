@@ -107,6 +107,10 @@ class ioOscilloscopeModel:
         self.controlState.ftdi_input_device_index = device_index
         return device_index
 
+    def setFtdiInputBitIndex(self, bit_index: int) -> int:
+        self.controlState.ftdi_input_bit_index = min(max(int(bit_index), 0), 7)
+        return self.controlState.ftdi_input_bit_index
+
     def setFtdiDllPath(self, dll_path: str) -> str:
         self.controlState.ftdi_dll_path = dll_path
         return dll_path

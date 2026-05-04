@@ -67,6 +67,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
             self._sourceSelector = QtWidgets.QComboBox()
             self._waveformSelector = QtWidgets.QComboBox()
             self._ftdiInputSpin = QtWidgets.QSpinBox()
+            self._ftdiBitSpin = QtWidgets.QSpinBox()
             self._liveFileEdit = QtWidgets.QLineEdit()
             self._scaleSpin = QtWidgets.QDoubleSpinBox()
             self._offsetSpin = QtWidgets.QDoubleSpinBox()
@@ -92,6 +93,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self._teeOutputSelector.addItems(["None", "File", "FTDI"])
 
         self._ftdiInputSpin.setRange(0, 255)
+        self._ftdiBitSpin.setRange(0, 7)
         self._ftdiOutputSpin.setRange(0, 255)
         self._scaleSpin.setRange(0.25, 20.0)
         self._scaleSpin.setSingleStep(0.25)
@@ -103,6 +105,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self._sourceSelector.currentTextChanged.connect(self._handle_source_changed)
         self._waveformSelector.currentTextChanged.connect(self._handle_waveform_changed)
         self._ftdiInputSpin.valueChanged.connect(self._handle_ftdi_input_changed)
+        self._ftdiBitSpin.valueChanged.connect(self._handle_ftdi_bit_changed)
         self._liveFileEdit.editingFinished.connect(self._handle_live_file_changed)
         self._scaleSpin.valueChanged.connect(self._handle_scale_changed)
         self._offsetSpin.valueChanged.connect(self._handle_offset_changed)
@@ -133,19 +136,22 @@ class ioQtScopeWindow(_QtMainWindowBase):
         controls.addWidget(self._liveFileEdit, 1, 1, 1, 3)
         controls.addWidget(QtWidgets.QLabel("Scale"), 1, 4)
         controls.addWidget(self._scaleSpin, 1, 5)
-        controls.addWidget(QtWidgets.QLabel("Offset"), 1, 6)
-        controls.addWidget(self._offsetSpin, 1, 7)
+        controls.addWidget(QtWidgets.QLabel("FTDI Bit"), 1, 6)
+        controls.addWidget(self._ftdiBitSpin, 1, 7)
 
-        controls.addWidget(self._startButton, 2, 0)
-        controls.addWidget(self._stopButton, 2, 1)
-        controls.addWidget(self._teeEnabledCheck, 2, 2, 1, 2)
-        controls.addWidget(QtWidgets.QLabel("Tee Mode"), 2, 4)
-        controls.addWidget(self._teeOutputSelector, 2, 5)
-        controls.addWidget(QtWidgets.QLabel("FTDI Out"), 2, 6)
-        controls.addWidget(self._ftdiOutputSpin, 2, 7)
+        controls.addWidget(QtWidgets.QLabel("Offset"), 2, 4)
+        controls.addWidget(self._offsetSpin, 2, 5)
 
-        controls.addWidget(QtWidgets.QLabel("Tee Path"), 3, 0)
-        controls.addWidget(self._teePathEdit, 3, 1, 1, 7)
+        controls.addWidget(self._startButton, 3, 0)
+        controls.addWidget(self._stopButton, 3, 1)
+        controls.addWidget(self._teeEnabledCheck, 3, 2, 1, 2)
+        controls.addWidget(QtWidgets.QLabel("Tee Mode"), 3, 4)
+        controls.addWidget(self._teeOutputSelector, 3, 5)
+        controls.addWidget(QtWidgets.QLabel("FTDI Out"), 3, 6)
+        controls.addWidget(self._ftdiOutputSpin, 3, 7)
+
+        controls.addWidget(QtWidgets.QLabel("Tee Path"), 4, 0)
+        controls.addWidget(self._teePathEdit, 4, 1, 1, 7)
 
         container = QtWidgets.QWidget()
         layout = QtWidgets.QVBoxLayout(container)
@@ -220,6 +226,10 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self._invoke_controller("setFtdiInputDeviceIndex", value)
         if self._sourceSelector.currentText() == "FTDI Device":
             self._invoke_controller("setInputSource", f"ftdi:{value}")
+        self._sync_controls_from_controller()
+
+    def _handle_ftdi_bit_changed(self, value: int) -> None:
+        self._invoke_controller("setFtdiInputBitIndex", value)
         self._sync_controls_from_controller()
 
     def _handle_live_file_changed(self) -> None:
@@ -299,6 +309,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
             self._sourceSelector,
             self._waveformSelector,
             self._ftdiInputSpin,
+            self._ftdiBitSpin,
             self._liveFileEdit,
             self._scaleSpin,
             self._offsetSpin,
@@ -313,6 +324,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self._sourceSelector.setCurrentText(source_label)
         self._waveformSelector.setCurrentText(control_state.generated_waveform)
         self._ftdiInputSpin.setValue(control_state.ftdi_input_device_index)
+        self._ftdiBitSpin.setValue(control_state.ftdi_input_bit_index)
         self._sync_line_edit_text(self._liveFileEdit, control_state.live_file_path)
         self._scaleSpin.setValue(control_state.scale)
         self._offsetSpin.setValue(control_state.offset)
@@ -326,6 +338,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
             self._sourceSelector,
             self._waveformSelector,
             self._ftdiInputSpin,
+            self._ftdiBitSpin,
             self._liveFileEdit,
             self._scaleSpin,
             self._offsetSpin,
@@ -343,6 +356,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
     def _update_control_visibility(self, source_label: str, tee_label: str, tee_enabled: bool) -> None:
         self._waveformSelector.setEnabled(source_label == "Generated")
         self._ftdiInputSpin.setEnabled(source_label == "FTDI Device")
+        self._ftdiBitSpin.setEnabled(source_label == "FTDI Device")
         self._liveFileEdit.setEnabled(source_label == "Live File")
         self._teeOutputSelector.setEnabled(True)
         self._teePathEdit.setEnabled(tee_enabled and tee_label == "File")
@@ -388,6 +402,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
         return (
             f"running={snapshot.get('running', False)} "
             f"source={snapshot.get('input_source', 'n/a')} "
+            f"ftdi_bit={snapshot.get('ftdi_input_bit_index', 0)} "
             f"samples={snapshot.get('sample_count', 0)} "
             f"bytes_read={snapshot.get('bytes_read', 0)} "
             f"bytes_written={snapshot.get('bytes_written', 0)} "

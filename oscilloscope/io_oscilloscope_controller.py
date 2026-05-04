@@ -118,6 +118,12 @@ class ioOscilloscopeController:
         self._restart_live_session_if_running(preview=True)
         return self._render_and_notify()
 
+    def setFtdiInputBitIndex(self, bit_index: int) -> dict:
+        bit_index = self.model.setFtdiInputBitIndex(bit_index)
+        self._append_event("ftdi_input_bit_change", {"ftdi_input_bit_index": bit_index})
+        self._restart_live_session_if_running(preview=True)
+        return self.refreshFromControls()
+
     def setFtdiDllPath(self, dll_path: str) -> dict:
         self.model.setFtdiDllPath(dll_path)
         self._append_event("ftdi_dll_path_change", {"ftdi_dll_path": dll_path})
@@ -188,7 +194,7 @@ class ioOscilloscopeController:
 
     def refreshLiveSession(self) -> dict:
         if self.running and self.liveSession is not None:
-            latest = self.liveSession.latest_samples(self.model.viewportState.window_size * 8)
+            latest = self.liveSession.latest_samples(self.model.viewportState.window_size)
             if latest:
                 self.model.setRawSignal(latest)
             self._record_recovery_messages()
@@ -232,6 +238,7 @@ class ioOscilloscopeController:
             "viewport_window_size": self.model.viewportState.window_size,
             "view_count": len(self.views),
             "ftdi_input_device_index": self.model.controlState.ftdi_input_device_index,
+            "ftdi_input_bit_index": self.model.controlState.ftdi_input_bit_index,
             "ftdi_output_device_index": self.model.controlState.ftdi_output_device_index,
             "tee_output_enabled": self.model.controlState.tee_output_enabled,
             "tee_output_mode": self._effective_tee_mode(),
@@ -294,6 +301,7 @@ class ioOscilloscopeController:
                 sample_count=len(self.model.processedSignal),
                 running=self.running,
                 active_view=self.model.controlState.active_view,
+                ftdi_input_bit_index=self.model.controlState.ftdi_input_bit_index,
                 session_mode=self._session_mode_name(),
                 tee_output_mode=self._effective_tee_mode(),
                 bytes_read=int(session_status.get("bytes_read", 0)),

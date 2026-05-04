@@ -74,6 +74,7 @@ class ioOscilloscopeView(ABC):
                 "sample_count": render_input.sample_count,
                 "running": render_input.running,
                 "active_view": render_input.active_view,
+                "ftdi_input_bit_index": render_input.ftdi_input_bit_index,
                 "session_mode": render_input.session_mode,
                 "tee_output_mode": render_input.tee_output_mode,
                 "bytes_read": render_input.bytes_read,

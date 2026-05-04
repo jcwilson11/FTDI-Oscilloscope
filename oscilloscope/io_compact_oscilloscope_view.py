@@ -96,6 +96,7 @@ class ioCompactOscilloscopeView(ioOscilloscopeView, _QtWidgetBase, metaclass=ioQ
     def _render_snapshot(self, snapshot: dict[str, Any]) -> None:
         self._status_text = (
             f"source={snapshot.get('input_source', 'n/a')} "
+            f"ftdi_bit={snapshot.get('ftdi_input_bit_index', 0)} "
             f"scale={snapshot.get('scale', 1.0):.2f} "
             f"offset={snapshot.get('offset', 0.0):.2f} "
             f"samples={snapshot.get('sample_count', len(snapshot['signal']))} "

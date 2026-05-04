@@ -34,7 +34,9 @@ class ioFtdiWaveformSource:
 
         if not payload:
             return [0.0]
-        return [((byte / 255.0) * 2.0) - 1.0 for byte in payload]
+
+        mask = 1 << max(0, min(int(control_state.ftdi_input_bit_index), 7))
+        return [1.0 if byte & mask else -1.0 for byte in payload]
 
     def _resolve_device_index(self, control_state: ioControlState) -> int:
         if ":" not in control_state.input_source:

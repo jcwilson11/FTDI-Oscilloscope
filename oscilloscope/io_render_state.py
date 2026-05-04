@@ -25,6 +25,7 @@ class ioRenderState:
     sample_count: int
     running: bool
     active_view: str
+    ftdi_input_bit_index: int = 0
     session_mode: str = "idle"
     tee_output_mode: str = "none"
     bytes_read: int = 0

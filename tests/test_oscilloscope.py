@@ -19,6 +19,7 @@ from oscilloscope import (
     ioDetailedOscilloscopeView,
     ioFtdiWaveformSource,
     ioLandscapeTheme,
+    ioLiveSampleHistory,
     ioLiveOscilloscopeSession,
     ioOscilloscopeController,
     ioOscilloscopeModel,
@@ -319,6 +320,7 @@ class OscilloscopeArchitectureTests(unittest.TestCase):
     def test_ftdi_waveform_source_normalizes_stream_bytes(self):
         control = ioControlState(
             input_source="ftdi:3",
+            ftdi_input_bit_index=5,
             sample_time_seconds=0.001,
             sample_duration_seconds=0.004,
         )
@@ -328,7 +330,16 @@ class OscilloscopeArchitectureTests(unittest.TestCase):
 
         self.assertEqual(len(payload), 4)
         self.assertAlmostEqual(payload[0], -1.0)
-        self.assertGreater(payload[-1], -0.3)
+        self.assertAlmostEqual(payload[1], 1.0)
+        self.assertAlmostEqual(payload[2], -1.0)
+        self.assertAlmostEqual(payload[-1], 1.0)
+
+    def test_live_sample_history_can_track_one_ftdi_bit_as_high_low(self):
+        history = ioLiveSampleHistory(bit_index=0)
+
+        history.append_bytes(b"\x00\x01\x00\x01")
+
+        self.assertEqual(history.latest_samples(), [-1.0, 1.0, -1.0, 1.0])
 
     def test_signal_sources_implement_protocol_and_generator_delegates(self):
         class RejectingSource:

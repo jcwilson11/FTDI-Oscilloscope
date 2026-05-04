@@ -87,6 +87,12 @@ class ioFtdiSession:
         self._dll.FT_SetUSBParameters.argtypes = [c_void_p, c_uint32, c_uint32]
         self._dll.FT_SetUSBParameters.restype = c_uint32
 
+        self._dll.FT_SetTimeouts.argtypes = [c_void_p, c_uint32, c_uint32]
+        self._dll.FT_SetTimeouts.restype = c_uint32
+
+        self._dll.FT_SetLatencyTimer.argtypes = [c_void_p, c_ubyte]
+        self._dll.FT_SetLatencyTimer.restype = c_uint32
+
         self._dll.FT_SetBitMode.argtypes = [c_void_p, c_ubyte, c_ubyte]
         self._dll.FT_SetBitMode.restype = c_uint32
 
@@ -105,6 +111,9 @@ class ioFtdiSession:
             ctypes.POINTER(c_uint32),
         ]
         self._dll.FT_Read.restype = c_uint32
+
+        self._dll.FT_GetQueueStatus.argtypes = [c_void_p, ctypes.POINTER(c_uint32)]
+        self._dll.FT_GetQueueStatus.restype = c_uint32
 
         self._dll.FT_CreateDeviceInfoList.argtypes = [ctypes.POINTER(c_uint32)]
         self._dll.FT_CreateDeviceInfoList.restype = c_uint32
@@ -130,12 +139,31 @@ class ioFtdiSession:
         status = self._dll.FT_Open(self._device_index, byref(self._handle))
         self._check(status, "FT_Open")
 
-    def initialize_bitbang(self, direction_mask: int = 0xFF, usb_buffer_size: int = 64):
+    def initialize_bitbang(
+        self,
+        direction_mask: int = 0xFF,
+        usb_buffer_size: int = 64,
+        read_timeout_ms: int = 20,
+        write_timeout_ms: int = 20,
+        latency_ms: int = 2,
+    ):
         self._check(self._dll.FT_ResetDevice(self._handle), "FT_ResetDevice")
         self._check(self._dll.FT_Purge(self._handle, FT_PURGE_RX | FT_PURGE_TX), "FT_Purge")
         self._check(
             self._dll.FT_SetUSBParameters(self._handle, usb_buffer_size, 0),
             "FT_SetUSBParameters",
+        )
+        self._check(
+            self._dll.FT_SetTimeouts(
+                self._handle,
+                c_uint32(max(0, int(read_timeout_ms))),
+                c_uint32(max(0, int(write_timeout_ms))),
+            ),
+            "FT_SetTimeouts",
+        )
+        self._check(
+            self._dll.FT_SetLatencyTimer(self._handle, c_ubyte(max(2, min(int(latency_ms), 255)))),
+            "FT_SetLatencyTimer",
         )
         self._check(
             self._dll.FT_SetBitMode(
@@ -168,6 +196,34 @@ class ioFtdiSession:
         read = c_uint32()
         self._check(self._dll.FT_Read(self._handle, payload, count, byref(read)), "FT_Read")
         return bytes(payload[: read.value])
+
+    def queued_read_bytes(self, max_count: int) -> bytes:
+        if max_count < 0:
+            raise FtdiError("max_count must be non-negative")
+        if max_count == 0:
+            return b""
+
+        queued = c_uint32()
+        self._check(self._dll.FT_GetQueueStatus(self._handle, byref(queued)), "FT_GetQueueStatus")
+        if queued.value == 0:
+            return b""
+        return self.read_bytes(min(int(queued.value), int(max_count)))
+
+    def latest_read_bytes(self, max_count: int) -> bytes:
+        if max_count < 0:
+            raise FtdiError("max_count must be non-negative")
+        if max_count == 0:
+            return b""
+
+        queued = c_uint32()
+        self._check(self._dll.FT_GetQueueStatus(self._handle, byref(queued)), "FT_GetQueueStatus")
+        if queued.value == 0:
+            return self.read_bytes(max_count)
+
+        payload = self.read_bytes(int(queued.value))
+        if len(payload) <= max_count:
+            return payload
+        return payload[-max_count:]
 
     def list_devices(self) -> list[dict]:
         count = c_uint32()

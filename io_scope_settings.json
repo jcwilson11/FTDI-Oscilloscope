@@ -5,17 +5,18 @@
     "input_source": "sine",
     "generated_waveform": "sine",
     "live_file_path": "demo_input.bin",
-    "scale": 2.25,
+    "scale": 1.0,
     "offset": 0.0,
     "active_theme": "portrait",
     "active_view": "compact",
     "ftdi_input_device_index": 0,
+    "ftdi_input_bit_index": 0,
     "ftdi_output_device_index": 0,
     "ftdi_bytes_per_read": 256,
     "ftdi_dll_path": "",
-    "write_to_ftdi_enabled": false,
-    "tee_output_enabled": false,
-    "tee_output_mode": "none",
+    "write_to_ftdi_enabled": true,
+    "tee_output_enabled": true,
+    "tee_output_mode": "ftdi",
     "tee_output_path": "demo_output.bin",
     "render_interval_ms": 50
   },
@@ -25,14 +26,14 @@
   },
   "event_log": [
     {
-      "timestamp": "2026-05-03T22:49:31-04:00",
+      "timestamp": "2026-05-03T23:22:05-04:00",
       "event_type": "source_change",
       "payload": {
         "input_source": "ftdi:0"
       }
     },
     {
-      "timestamp": "2026-05-03T22:49:49-04:00",
+      "timestamp": "2026-05-03T23:22:10-04:00",
       "event_type": "session_start",
       "payload": {
         "input_source": "ftdi:0",
@@ -40,226 +41,43 @@
       }
     },
     {
-      "timestamp": "2026-05-03T22:49:50-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "detailed"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:50:15-04:00",
+      "timestamp": "2026-05-03T23:22:45-04:00",
       "event_type": "session_stop",
       "payload": {
         "input_source": "ftdi:0"
       }
     },
     {
-      "timestamp": "2026-05-03T22:54:03-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "compact"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:10-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "ftdi:0",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:10-04:00",
-      "event_type": "recovery_message",
-      "payload": {
-        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:28-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.25
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:28-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.5
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:35-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.75
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:35-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 2.0
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:48-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "detailed"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:54:55-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 2.25
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:55:05-04:00",
-      "event_type": "session_stop",
-      "payload": {
-        "input_source": "ftdi:0"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:09-04:00",
-      "event_type": "active_view_change",
-      "payload": {
-        "active_view": "compact"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:19-04:00",
+      "timestamp": "2026-05-03T23:22:58-04:00",
       "event_type": "source_change",
       "payload": {
         "input_source": "sine"
       }
     },
     {
-      "timestamp": "2026-05-03T22:56:23-04:00",
-      "event_type": "scale_change",
+      "timestamp": "2026-05-03T23:23:00-04:00",
+      "event_type": "tee_output_enabled_change",
       "payload": {
-        "scale": 2.0
+        "tee_output_enabled": true
       }
     },
     {
-      "timestamp": "2026-05-03T22:56:24-04:00",
-      "event_type": "scale_change",
+      "timestamp": "2026-05-03T23:23:03-04:00",
+      "event_type": "tee_output_mode_change",
       "payload": {
-        "scale": 1.75
+        "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-05-03T22:56:24-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.5
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:24-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.25
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:24-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.0
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:24-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 0.75
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:25-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 0.5
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:25-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 0.25
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:29-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 0.5
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:29-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 0.75
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:30-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.0
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:32-04:00",
+      "timestamp": "2026-05-03T23:23:07-04:00",
       "event_type": "session_start",
       "payload": {
         "input_source": "sine",
-        "tee_output_mode": "none"
+        "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-05-03T22:56:55-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.25
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:56-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.5
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:56-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 1.75
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:56-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 2.0
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:56:56-04:00",
-      "event_type": "scale_change",
-      "payload": {
-        "scale": 2.25
-      }
-    },
-    {
-      "timestamp": "2026-05-03T22:57:07-04:00",
+      "timestamp": "2026-05-03T23:23:17-04:00",
       "event_type": "session_stop",
       "payload": {
         "input_source": "sine"
