@@ -1,0 +1,36 @@
+@startuml
+title ioScope Logical Class View Overview With Responsibilities
+skinparam rectangle {
+  RoundCorner 10
+}
+skinparam shadowing false
+left to right direction
+
+rectangle "Bootstrap and CLI\nioScopeShell, ioPipelineCli,\nioLegacyFtdiCli, ioFileComparator\n--\nEntry points and verification helpers." as bootstrap
+rectangle "Qt MVC\nioQtScopeWindow, ioOscilloscopeController,\nioOscilloscopeModel, ioOscilloscopeView\n--\nUI coordination and render flow." as mvc
+rectangle "Signal Flow\nioFilterPipeline, ioWaveformGenerator,\nioSignalSource family\n--\nSample processing and source selection." as signal
+rectangle "Live Acquisition\nioLiveOscilloscopeSession,\nioLiveSampleHistory,\nioTappedReadableByteStream\n--\nLive sampling and tee history capture." as live
+rectangle "FTDI Streams and Session\nioFtdiSession, ioFtdiByteStream,\nioFtdiOutputByteStream, ioFtdiDevice\n--\nDriver-facing stream and adapter layer." as streams
+rectangle "Transfer Pipeline\nioPipelineController, ioDataBuffer,\nioUsbReadController, ioUsbWriteController\n--\nRequired threaded producer-consumer path." as pipeline
+rectangle "Legacy Operations\nioBuffer, ioBaseIoOperation,\nioRead, ioWrite\n--\nOlder compatibility-only FTDI path." as legacy
+
+bootstrap --> mvc
+bootstrap --> pipeline
+bootstrap --> streams
+mvc --> signal
+mvc --> live
+signal --> streams
+live --> pipeline
+pipeline --> streams
+legacy --> streams
+
+note bottom of mvc
+The readable detail set is split so each diagram is
+presentation-sized and professor-readable.
+Use the companion files:
+- io_scope_logical_class_readable_mvc.puml
+- io_scope_logical_class_readable_signal_flow.puml
+- io_scope_logical_class_readable_ftdi_streams.puml
+- io_scope_logical_class_readable_transfer_pipeline.puml
+end note
+@enduml

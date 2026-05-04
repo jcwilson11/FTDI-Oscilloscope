@@ -14,7 +14,6 @@ from oscilloscope import (
     QT_AVAILABLE,
     SignalSource,
     SampleMappingFilterBase,
-    StaticThemeBase,
     ioCompactOscilloscopeView,
     ioControlState,
     ioDetailedOscilloscopeView,
@@ -27,6 +26,7 @@ from oscilloscope import (
     ioQtScopeWindow,
     ioRenderState,
     ioSignalSource,
+    ioViewTheme,
     ioViewportState,
     ioWaveformGenerator,
     scpOffset,
@@ -64,6 +64,47 @@ class FakeLineEdit:
 
     def setText(self, value: str) -> None:
         self._text = value
+
+
+class FakeButton:
+    def __init__(self):
+        self._style = ""
+
+    def setStyleSheet(self, value: str) -> None:
+        self._style = value
+
+    def styleSheet(self) -> str:
+        return self._style
+
+
+class FakeScrollBar:
+    def __init__(self):
+        self.minimum = 0
+        self.maximum = 0
+        self.page_step = 0
+        self.single_step = 0
+        self.value = 0
+        self.signals_blocked = False
+        self.enabled = True
+
+    def blockSignals(self, blocked: bool) -> None:
+        self.signals_blocked = blocked
+
+    def setRange(self, minimum: int, maximum: int) -> None:
+        self.minimum = minimum
+        self.maximum = maximum
+
+    def setPageStep(self, value: int) -> None:
+        self.page_step = value
+
+    def setSingleStep(self, value: int) -> None:
+        self.single_step = value
+
+    def setValue(self, value: int) -> None:
+        self.value = value
+
+    def setEnabled(self, enabled: bool) -> None:
+        self.enabled = enabled
 
 
 class OscilloscopeArchitectureTests(unittest.TestCase):
@@ -204,6 +245,18 @@ class OscilloscopeArchitectureTests(unittest.TestCase):
         self.assertEqual(rendered["view_id"], "compact")
         self.assertEqual(controller.views[0].lastRenderedSignal, controller.views[1].lastRenderedSignal)
 
+    def test_controller_scroll_updates_visible_window_for_views(self):
+        controller = ioOscilloscopeController(
+            model=ioOscilloscopeModel(viewport_state=ioViewportState(start_index=0, window_size=3))
+        )
+        controller.start([0.0, 1.0, 2.0, 3.0, 4.0, 5.0])
+
+        rendered = controller.scrollViewport(2)
+
+        self.assertEqual(rendered["signal"], [2.0, 3.0, 4.0])
+        self.assertEqual(controller.views[0].lastRenderedSignal, [2.0, 3.0, 4.0])
+        self.assertEqual(controller.views[1].lastRenderedSignal, [2.0, 3.0, 4.0])
+
     def test_controller_can_switch_active_view_without_changing_model_logic(self):
         controller = ioOscilloscopeController()
         controller.start([0.0, 0.5, 1.0])
@@ -332,8 +385,47 @@ class OscilloscopeArchitectureTests(unittest.TestCase):
 
         self.assertEqual(line_edit.text(), "demo_output.bin")
 
+    def test_qt_scope_window_highlights_last_clicked_transport_button(self):
+        window = ioQtScopeWindow(views=[ioCompactOscilloscopeView(), ioDetailedOscilloscopeView()])
+        window._startButton = FakeButton()
+        window._stopButton = FakeButton()
+
+        window._set_last_transport_action("start")
+        self.assertIn("#cfeecf", window._startButton.styleSheet())
+        self.assertIn("#d9d9d9", window._stopButton.styleSheet())
+
+        window._set_last_transport_action("stop")
+        self.assertIn("#f3caca", window._stopButton.styleSheet())
+        self.assertIn("#d9d9d9", window._startButton.styleSheet())
+
+    def test_compact_view_syncs_viewport_scrollbar_from_snapshot(self):
+        view = ioCompactOscilloscopeView()
+        view._viewportScrollBar = FakeScrollBar()
+
+        view._sync_viewport_scrollbar(
+            {
+                "sample_count": 250,
+                "viewport_window_size": 80,
+                "viewport_start": 25,
+            }
+        )
+
+        self.assertEqual(view._viewportScrollBar.minimum, 0)
+        self.assertEqual(view._viewportScrollBar.maximum, 170)
+        self.assertEqual(view._viewportScrollBar.page_step, 80)
+        self.assertEqual(view._viewportScrollBar.value, 25)
+
+    def test_compact_view_scrollbar_calls_set_viewport_action(self):
+        view = ioCompactOscilloscopeView()
+        received: list[int] = []
+
+        view.attachActions({"set_viewport": received.append})
+        view._handle_viewport_changed(42)
+
+        self.assertEqual(received, [42])
+
     def test_themes_and_filters_preserve_inheritance_contracts(self):
-        self.assertTrue(issubclass(ioLandscapeTheme, StaticThemeBase))
+        self.assertEqual(ioLandscapeTheme.__bases__, (ioViewTheme,))
         self.assertTrue(issubclass(type(scpScale(2.0)), SampleMappingFilterBase))
         self.assertTrue(issubclass(type(scpOffset(1.0)), SampleMappingFilterBase))
 

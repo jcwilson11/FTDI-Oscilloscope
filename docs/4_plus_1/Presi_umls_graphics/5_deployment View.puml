@@ -1,0 +1,48 @@
+@startuml
+title ioScope Required Deployment Diagram
+skinparam shadowing false
+
+node "Instructor Windows Laptop" {
+  artifact "Python 3.x Runtime" as python
+  artifact "controller.py scope-qt" as scopeQt
+  artifact "controller.py pipeline" as pipelineCli
+  artifact "oscilloscope package" as osc
+  artifact "ioLibrary package" as lib
+  artifact "PySide6 + pyqtgraph" as qtDeps
+  artifact "ftd2xx.dll / D2XX" as d2xx
+  database "io_scope_settings.json" as settings
+  file "sample input file" as inputFile
+}
+
+node "Display Surface" {
+  artifact "ioQtScopeWindow" as qtWindow
+  artifact "ioCompactOscilloscopeView" as compactUi
+  artifact "ioDetailedOscilloscopeView" as detailedUi
+}
+
+node "USB Devices" {
+  artifact "FTDI Read Device" as inputDevice
+  artifact "FTDI Write Device\n<<optional single-buffer mode>>" as outputDevice
+}
+
+python -- scopeQt
+python -- pipelineCli
+scopeQt -- osc
+pipelineCli -- lib
+osc -- qtDeps
+lib -- d2xx
+osc -- settings
+osc -- inputFile
+osc -- qtWindow
+qtWindow -- compactUi
+qtWindow -- detailedUi
+lib -- inputDevice
+lib -- outputDevice
+
+note bottom of outputDevice
+Supported only through the current
+single shared circular-buffer pipeline.
+The separate dual-buffer extra-credit
+extension is not implemented here.
+end note
+@enduml

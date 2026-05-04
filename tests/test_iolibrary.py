@@ -53,13 +53,15 @@ class NonContextReadSession:
     def __init__(self):
         self.opened = False
         self.initialized = False
+        self.direction_mask = None
         self.closed = False
 
     def open(self):
         self.opened = True
 
-    def initialize_bitbang(self):
+    def initialize_bitbang(self, direction_mask: int = 0xFF, usb_buffer_size: int = 64):
         self.initialized = True
+        self.direction_mask = direction_mask
 
     def close(self):
         self.closed = True
@@ -71,11 +73,15 @@ class NonContextReadSession:
 class NonContextWriteSession:
     def __init__(self):
         self.opened = False
+        self.direction_mask = None
         self.closed = False
         self.writes = []
 
     def open(self):
         self.opened = True
+
+    def initialize_bitbang(self, direction_mask: int = 0xFF, usb_buffer_size: int = 64):
+        self.direction_mask = direction_mask
 
     def close(self):
         self.closed = True
@@ -211,8 +217,10 @@ class IoLibraryTests(unittest.TestCase):
 
         self.assertTrue(read_session.opened)
         self.assertTrue(read_session.initialized)
+        self.assertEqual(read_session.direction_mask, 0x00)
         self.assertTrue(read_session.closed)
         self.assertTrue(write_session.opened)
+        self.assertEqual(write_session.direction_mask, 0xFF)
         self.assertTrue(write_session.closed)
         self.assertEqual(write_session.writes, [b"AB"])
 

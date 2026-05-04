@@ -24,11 +24,13 @@ class ioAbstractSessionBackedByteStream(ABC):
 
     def open(self) -> None:
         session = self.session_factory()
-        if hasattr(session, "__enter__"):
-            session = session.__enter__()
-        else:
+        if hasattr(session, "open"):
             session.open()
             self._initialize_non_context_session(session)
+        elif hasattr(session, "__enter__"):
+            session = session.__enter__()
+        else:
+            raise AttributeError("session_factory must return an object with open() or __enter__().")
         self.session = session
         self.connected = True
 

@@ -31,7 +31,6 @@ package "Signal Flow Context" {
 
 package "Theme Hierarchy" {
   abstract class ioViewTheme
-  abstract class ioStaticThemeBase
   class ioPortraitTheme
   class ioLandscapeTheme
 }
@@ -40,28 +39,27 @@ package "Live Session Context" {
   class ioLiveOscilloscopeSession
 }
 
-ioScopeShell --> ioOscilloscopeController
-ioScopeShell --> ioScopeSettingsStore
+ioScopeShell ..> ioOscilloscopeController : starts / restores state
+ioScopeShell ..> ioScopeSettingsStore : loads / saves settings
 
 ioCompactOscilloscopeView --|> ioOscilloscopeView
 ioDetailedOscilloscopeView --|> ioOscilloscopeView
-ioTkOscilloscopeWindow ..> ioOscilloscopeWindow
-ioQtScopeWindow --> ioCompactOscilloscopeView
-ioQtScopeWindow --> ioDetailedOscilloscopeView
-ioQtScopeWindow --> ioOscilloscopeController
-ioOscilloscopeController --> ioOscilloscopeModel
-ioOscilloscopeController --> ioOscilloscopeView
-ioOscilloscopeController --> ioRenderState
-ioOscilloscopeController --> ioLiveOscilloscopeSession
-ioOscilloscopeModel --> ioControlState
-ioOscilloscopeModel --> ioViewportState
-ioOscilloscopeModel --> ioFilterPipeline
-ioOscilloscopeModel --> ioWaveformGenerator
-ioOscilloscopeView --> ioViewTheme
+ioTkOscilloscopeWindow ..> ioOscilloscopeWindow : legacy host contract
+ioQtScopeWindow o--> ioCompactOscilloscopeView : hosts compact view
+ioQtScopeWindow o--> ioDetailedOscilloscopeView : hosts detailed view
+ioQtScopeWindow o--> ioOscilloscopeController : forwards UI events to
+ioOscilloscopeController o--> ioOscilloscopeModel : updates / queries model
+ioOscilloscopeController o--> ioOscilloscopeView : notifies active views
+ioOscilloscopeController ..> ioRenderState : builds render snapshot
+ioOscilloscopeController o--> ioLiveOscilloscopeSession : starts / stops live session
+ioOscilloscopeModel o--> ioControlState : stores controls
+ioOscilloscopeModel o--> ioViewportState : stores viewport
+ioOscilloscopeModel o--> ioFilterPipeline : applies filters
+ioOscilloscopeModel o--> ioWaveformGenerator : refreshes samples from
+ioOscilloscopeView o--> ioViewTheme : theme
 
-ioPortraitTheme --|> ioStaticThemeBase
-ioLandscapeTheme --|> ioStaticThemeBase
-ioStaticThemeBase --|> ioViewTheme
+ioPortraitTheme --|> ioViewTheme
+ioLandscapeTheme --|> ioViewTheme
 
 note right of ioOscilloscopeView
 Primary MVC rule:

@@ -1,5 +1,5 @@
 @startuml
-title ioScope Required Use Case Diagram
+title ioScope Use Case Diagram
 left to right direction
 
 actor "Presenter" as Presenter

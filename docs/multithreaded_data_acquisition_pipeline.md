@@ -59,7 +59,8 @@ The startup order is intentional. `PipelineController` starts `UsbWriteControlle
 
 | UML Name | Current Prototype Mapping |
 | --- | --- |
-| `UsbReadController` | `UsbReadController` |
+| `UsbReadControl
+ler` | `UsbReadController` |
 | `UsbWriteController` | `UsbWriteController` |
 | `PipelineController` | `ioLibrary.pipeline.PipelineController` |
 | `DataBuffer` | `DataBuffer` |

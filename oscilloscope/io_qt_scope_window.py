@@ -14,6 +14,39 @@ _QtMainWindowBase = QtWidgets.QMainWindow if QT_AVAILABLE else object
 class ioQtScopeWindow(_QtMainWindowBase):
     """Top-level Qt shell that hosts selectable oscilloscope views and live controls."""
 
+    _TRANSPORT_BUTTON_STYLES = {
+        "inactive": (
+            "QPushButton {"
+            " background-color: #d9d9d9;"
+            " color: #202020;"
+            " font-weight: 600;"
+            " border: 1px solid #7f7f7f;"
+            " border-radius: 4px;"
+            " padding: 6px 14px;"
+            "}"
+        ),
+        "start": (
+            "QPushButton {"
+            " background-color: #cfeecf;"
+            " color: #14361a;"
+            " font-weight: 700;"
+            " border: 2px solid #2f7d32;"
+            " border-radius: 4px;"
+            " padding: 6px 14px;"
+            "}"
+        ),
+        "stop": (
+            "QPushButton {"
+            " background-color: #f3caca;"
+            " color: #4d1717;"
+            " font-weight: 700;"
+            " border: 2px solid #a33a3a;"
+            " border-radius: 4px;"
+            " padding: 6px 14px;"
+            "}"
+        ),
+    }
+
     def __init__(
         self,
         *,
@@ -26,6 +59,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self.views = list(views or [ioCompactOscilloscopeView(), ioDetailedOscilloscopeView()])
         self.controller = None
         self._active_view_id = self.views[0].view_id if self.views else "compact"
+        self._last_transport_action: str | None = None
 
         if QT_AVAILABLE:
             self._stack = QtWidgets.QStackedWidget()
@@ -72,8 +106,8 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self._liveFileEdit.editingFinished.connect(self._handle_live_file_changed)
         self._scaleSpin.valueChanged.connect(self._handle_scale_changed)
         self._offsetSpin.valueChanged.connect(self._handle_offset_changed)
-        self._startButton.clicked.connect(lambda: self._invoke_controller("start"))
-        self._stopButton.clicked.connect(lambda: self._invoke_controller("stop"))
+        self._startButton.clicked.connect(self._handle_start_clicked)
+        self._stopButton.clicked.connect(self._handle_stop_clicked)
         self._teeEnabledCheck.toggled.connect(self._handle_tee_enabled_changed)
         self._teeOutputSelector.currentTextChanged.connect(self._handle_tee_mode_changed)
         self._teePathEdit.editingFinished.connect(self._handle_tee_path_changed)
@@ -123,6 +157,7 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self.setCentralWidget(container)
         self.setWindowTitle(title)
         self.resize(1440, 900)
+        self._apply_transport_button_styles()
 
     def connectController(self, controller) -> None:
         self.controller = controller
@@ -199,6 +234,14 @@ class ioQtScopeWindow(_QtMainWindowBase):
 
     def _handle_offset_changed(self, value: float) -> None:
         self._invoke_controller("setOffset", value)
+
+    def _handle_start_clicked(self) -> None:
+        self._set_last_transport_action("start")
+        self._invoke_controller("start")
+
+    def _handle_stop_clicked(self) -> None:
+        self._set_last_transport_action("stop")
+        self._invoke_controller("stop")
 
     def _handle_tee_enabled_changed(self, enabled: bool) -> None:
         self._invoke_controller("setTeeOutputEnabled", enabled)
@@ -304,6 +347,23 @@ class ioQtScopeWindow(_QtMainWindowBase):
         self._teeOutputSelector.setEnabled(True)
         self._teePathEdit.setEnabled(tee_enabled and tee_label == "File")
         self._ftdiOutputSpin.setEnabled(tee_enabled and tee_label == "FTDI")
+
+    def _set_last_transport_action(self, action: str | None) -> None:
+        self._last_transport_action = action
+        self._apply_transport_button_styles()
+
+    def _apply_transport_button_styles(self) -> None:
+        if not hasattr(self, "_startButton") or not hasattr(self, "_stopButton"):
+            return
+
+        self._startButton.setStyleSheet(self._transport_button_style("start"))
+        self._stopButton.setStyleSheet(self._transport_button_style("stop"))
+
+    def _transport_button_style(self, button_name: str) -> str:
+        active_style = self._TRANSPORT_BUTTON_STYLES.get(button_name)
+        if self._last_transport_action == button_name and active_style is not None:
+            return active_style
+        return self._TRANSPORT_BUTTON_STYLES["inactive"]
 
     @staticmethod
     def _sync_line_edit_text(line_edit, value: str) -> None:
