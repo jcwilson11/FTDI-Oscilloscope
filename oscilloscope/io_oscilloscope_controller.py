@@ -194,9 +194,18 @@ class ioOscilloscopeController:
 
     def refreshLiveSession(self) -> dict:
         if self.running and self.liveSession is not None:
-            latest = self.liveSession.latest_samples(self.model.viewportState.window_size)
+            window_size = self.model.viewportState.window_size
+            history_limit = max(window_size * 8, 2048)
+            previous_count = len(self.model.processedSignal)
+            previous_start = self.model.viewportState.start_index
+            previous_max_start = max(0, previous_count - window_size)
+            was_following_tail = previous_start >= previous_max_start
+
+            latest = self.liveSession.latest_samples(history_limit)
             if latest:
                 self.model.setRawSignal(latest)
+                if was_following_tail:
+                    self.model.setViewportStart(max(0, len(self.model.processedSignal) - window_size))
             self._record_recovery_messages()
             if not self.liveSession.is_running() and self.running:
                 self.running = False

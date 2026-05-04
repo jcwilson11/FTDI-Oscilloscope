@@ -108,6 +108,38 @@ class FakeScrollBar:
         self.enabled = enabled
 
 
+class FakeLiveSession:
+    def __init__(self, samples: list[float] | None = None):
+        self.samples = list(samples or [])
+        self.started = False
+        self.stopped = False
+
+    def start(self, control_state, *, history_size: int = 4096) -> None:
+        self.started = True
+
+    def stop(self) -> None:
+        self.stopped = True
+
+    def is_running(self) -> bool:
+        return self.started and not self.stopped
+
+    def latest_samples(self, limit: int) -> list[float]:
+        if limit >= len(self.samples):
+            return list(self.samples)
+        return self.samples[-limit:]
+
+    def status_snapshot(self) -> dict:
+        return {
+            "running": self.is_running(),
+            "bytes_read": len(self.samples),
+            "bytes_written": 0,
+            "buffer_size": 0,
+            "safe_stopped": False,
+            "recovery_messages": [],
+            "tee_mode": "none",
+        }
+
+
 class OscilloscopeArchitectureTests(unittest.TestCase):
     def setUp(self):
         self.input_file = Path("oscilloscope_samples.bin")
@@ -282,6 +314,39 @@ class OscilloscopeArchitectureTests(unittest.TestCase):
 
         self.assertGreater(len(controller.model.rawSignal), 0)
         self.assertTrue(any(entry["event_type"] == "session_start" for entry in controller.model.eventLog))
+
+    def test_controller_live_session_keeps_scrollback_and_follows_tail(self):
+        live_session = FakeLiveSession(samples=[float(index) for index in range(20)])
+        controller = ioOscilloscopeController(
+            model=ioOscilloscopeModel(viewport_state=ioViewportState(start_index=0, window_size=3)),
+            live_session=live_session,
+        )
+        controller.running = True
+        live_session.started = True
+        controller.model.setRawSignal([0.0, 1.0, 2.0])
+
+        rendered = controller.refreshLiveSession()
+
+        self.assertEqual(len(controller.model.rawSignal), 20)
+        self.assertEqual(controller.model.viewportState.start_index, 17)
+        self.assertEqual(rendered["signal"], [17.0, 18.0, 19.0])
+
+    def test_controller_live_session_preserves_manual_scroll_position(self):
+        live_session = FakeLiveSession(samples=[float(index) for index in range(1, 21)])
+        controller = ioOscilloscopeController(
+            model=ioOscilloscopeModel(viewport_state=ioViewportState(start_index=0, window_size=3)),
+            live_session=live_session,
+        )
+        controller.running = True
+        live_session.started = True
+        controller.model.setRawSignal([float(index) for index in range(20)])
+        controller.model.setViewportStart(5)
+
+        rendered = controller.refreshLiveSession()
+
+        self.assertEqual(len(controller.model.rawSignal), 20)
+        self.assertEqual(controller.model.viewportState.start_index, 5)
+        self.assertEqual(rendered["signal"], [6.0, 7.0, 8.0])
 
     def test_controller_can_enable_and_report_tee_mode(self):
         controller = ioOscilloscopeController()
