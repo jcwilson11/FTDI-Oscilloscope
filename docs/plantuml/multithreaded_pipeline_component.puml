@@ -1,88 +1,62 @@
 @startuml
 title Multithreaded Data Acquisition Pipeline - Component Diagram
 
-skinparam componentStyle rectangle
+left to right direction
 skinparam shadowing false
+skinparam componentStyle uml2
 
-actor "CLI User" as User
-component "Pipeline CLI\n(command-line executable)" as CLI
-component "ioPipelineController" as Controller
-component "ioUsbReadController\n<<read worker>>" as ReadWorker
-queue "ioDataBuffer\n<<circular buffer>>" as CircularBuffer
-component "ioUsbWriteController\n<<write worker>>" as WriteWorker
+component "Pipeline CLI\n<<external driver>>" as CLI
 
-interface "ioReadableByteStream\n<<input source protocol>>" as InputSource
-component "ioFileInputByteStream\n<<file input source>>" as FileInput
-component "ioFtdiByteStream\n<<FTDI input source>>" as FtdiInput
+component "Multithreaded Data Acquisition Pipeline" as Pipeline {
+  component "ioPipelineController" as Controller
+  component "ioUsbReadController\n<<producer>>" as ReadWorker
+  queue "ioDataBuffer\n<<shared buffer>>" as Buffer
+  component "ioUsbWriteController\n<<consumer>>" as WriteWorker
 
-interface "ioWritableByteStream\n<<output sink protocol>>" as OutputSink
-component "ioFileByteStream\n<<file sink>>" as FileSink
-component "ioFtdiOutputByteStream\n<<FTDI sink>>" as FtdiSink
+  component "ioFileInputByteStream" as FileInput
+  component "ioFtdiByteStream" as FtdiInput
+  component "ioFileByteStream" as FileSink
+  component "ioFtdiOutputByteStream" as FtdiSink
 
-component "InputSession : ioFtdiSession\n<<existing>>" as InputSession
-component "OutputSession : ioFtdiSession\n<<existing>>" as OutputSession
-node "FTDI Input Device" as InputDevice
-node "FTDI Output Device" as OutputDevice
-file "Input File" as InputFile
-file "Output File" as OutputFile
-file "Reference File" as ReferenceFile
+  () "pipelineLifecycle" as PipelineLifecycle
+  () "readerControl" as ReaderControl
+  () "writerControl" as WriterControl
+  () "ioReadableByteStream" as ReadableContract
+  () "bufferWriter" as BufferWriter
+  () "bufferReader" as BufferReader
+  () "ioWritableByteStream" as WritableContract
+}
 
-User --> CLI : run pipeline or compare-files
-CLI --> Controller : configure / create / start / stop
-CLI --> OutputFile : compare-files left input
-CLI --> ReferenceFile : compare-files right input
+PipelineLifecycle - Controller
+ReaderControl - ReadWorker
+WriterControl - WriteWorker
+ReadableContract - FileInput
+ReadableContract - FtdiInput
+BufferWriter - Buffer
+BufferReader - Buffer
+WritableContract - FileSink
+WritableContract - FtdiSink
 
-Controller --> ReadWorker : manage thread lifecycle
-Controller --> WriteWorker : manage thread lifecycle
-Controller --> CircularBuffer : create / close
-Controller --> InputSource : select implementation
-Controller --> OutputSink : select implementation
+CLI ..> PipelineLifecycle : start() / stop() / join()
+Controller ..> ReaderControl : configure reader
+Controller ..> WriterControl : configure writer
+Controller ..> ReadableContract : select input mode
+Controller ..> WritableContract : select output mode
 
-ReadWorker --> InputSource : read from source
-InputSource --> FileInput : file mode
-InputSource --> FtdiInput : FTDI mode
-FileInput --> InputFile : read bytes / EOF
-FtdiInput --> InputSession : FTDI session calls
-InputSession --> InputDevice : FT_Read operations
+ReadWorker ..> ReadableContract : read_bytes()
+ReadWorker ..> BufferWriter : push() / close()
+WriteWorker ..> BufferReader : pop()
+WriteWorker ..> WritableContract : write_bytes()
 
-ReadWorker --> CircularBuffer : push byte chunks
-WriteWorker --> CircularBuffer : pop byte chunks
-WriteWorker --> OutputSink : write bytes
-
-OutputSink --> FileSink : file mode
-OutputSink --> FtdiSink : FTDI mode
-FileSink --> OutputFile : append or overwrite bytes
-FtdiSink --> OutputSession : FTDI session calls
-OutputSession --> OutputDevice : FT_Write operations
-
-note right of ReadWorker
-ReadWorker.
-Current input path can be either
-FTDI hardware or a file-based demo source.
+note bottom of Pipeline
+The component view focuses on software contracts:
+the controller coordinates workers, the workers
+depend on stream interfaces, and the buffer exposes
+separate producer and consumer entry points.
 end note
 
-note bottom of CircularBuffer
-Primary producer-consumer handoff.
-Implemented as ioDataBuffer with
-bounded ring storage and blocking
-push and pop synchronization.
-end note
-
-note right of WriteWorker
-WriteWorker.
-The writer keeps the same drain-and-write
-role regardless of selected destination.
-end note
-
-note bottom of CLI
-The repo now includes a compare-files
-subcommand for byte-for-byte validation
-of demo and reference binaries.
-end note
-
-note bottom of OutputSink
-OutputSink.
-ioFileByteStream supports append and
-overwrite workflows for demos.
+note bottom of Buffer
+ioDataBuffer is shared by both workers.
+It is not owned by either worker component.
 end note
 @enduml

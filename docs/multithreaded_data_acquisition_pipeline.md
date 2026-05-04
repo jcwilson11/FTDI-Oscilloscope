@@ -77,13 +77,13 @@ ler` | `UsbReadController` |
 
 Source: `docs/plantuml/multithreaded_pipeline_read_component.puml`
 
-Shows the read-side software components and the top-level flow between the CLI, controller, read worker, circular buffer, and selected input source.
+Shows the read-side subsystem using UML component notation with ports, delegated internal components, and the `ioReadableByteStream` contract provided by the selected input adapter.
 
 ### Write-Side Component Diagram
 
 Source: `docs/plantuml/multithreaded_pipeline_write_component.puml`
 
-Shows the write-side software components and the top-level flow between the CLI, controller, write worker, circular buffer, selected output sink, and validation files.
+Shows the write-side subsystem using UML component notation with ports, delegated internal components, and the `ioWritableByteStream` contract provided by the selected output adapter.
 
 ### Class Diagram
 

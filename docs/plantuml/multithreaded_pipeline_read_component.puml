@@ -1,55 +1,48 @@
 @startuml
 title Multithreaded Data Acquisition Pipeline - Read Side Component Diagram
 
-skinparam componentStyle rectangle
+left to right direction
 skinparam shadowing false
+skinparam componentStyle uml2
 
-actor "CLI User" as User
-component "Pipeline CLI\n(command-line executable)" as CLI
-component "ioPipelineController" as Controller
-component "ioUsbReadController\n<<read worker>>" as ReadWorker
-queue "ioDataBuffer\n<<circular buffer>>" as CircularBuffer
+component "Pipeline CLI\n<<external driver>>" as CLI
 
-interface "ioReadableByteStream\n<<input source protocol>>" as InputSource
-component "ioFileInputByteStream\n<<file input source>>" as FileInput
-component "ioFtdiByteStream\n<<FTDI input source>>" as FtdiInput
+component "Read Side Subsystem" as ReadSide {
+  portin commandPort
+  portin sourcePort
+  portout bufferPort
 
-component "InputSession : ioFtdiSession\n<<existing>>" as InputSession
-node "FTDI Input Device" as InputDevice
-file "Input File" as InputFile
+  component "ioPipelineController" as Controller
+  component "ioUsbReadController\n<<producer>>" as ReadWorker
+  queue "ioDataBuffer\n<<shared buffer>>" as Buffer
+  component "ioFileInputByteStream" as FileInput
+  component "ioFtdiByteStream" as FtdiInput
 
-User --> CLI : run pipeline or compare-files
-CLI --> Controller : configure / create / start / stop
+  () "pipelineLifecycle" as PipelineLifecycle
+  () "readerControl" as ReaderControl
+  () "ioReadableByteStream" as ReadableContract
+  () "bufferWriter" as BufferWriter
+}
 
-Controller --> ReadWorker : manage thread lifecycle
-Controller --> CircularBuffer : create / close
-Controller --> InputSource : select implementation
+PipelineLifecycle - Controller
+ReaderControl - ReadWorker
+ReadableContract - FileInput
+ReadableContract - FtdiInput
+BufferWriter - Buffer
 
-ReadWorker --> InputSource : read from source
-InputSource --> FileInput : file mode
-InputSource --> FtdiInput : FTDI mode
-FileInput --> InputFile : read bytes / EOF
-FtdiInput --> InputSession : FTDI session calls
-InputSession --> InputDevice : FT_Read operations
+CLI ..> commandPort : pipeline command
+commandPort --> Controller : delegation
+sourcePort --> ReadWorker : selected source
+Buffer --> bufferPort : buffered bytes
 
-ReadWorker --> CircularBuffer : push byte chunks
+Controller ..> ReaderControl : configure + start
+Controller ..> ReadableContract : select input mode
+ReadWorker ..> ReadableContract : read_bytes()
+ReadWorker ..> BufferWriter : push() / close()
 
-note right of ReadWorker
-ReadWorker.
-Current input path can be either
-FTDI hardware or a file-based demo source.
-end note
-
-note bottom of CircularBuffer
-Primary producer-consumer handoff.
-Implemented as ioDataBuffer with
-bounded ring storage and blocking
-push and pop synchronization.
-end note
-
-note bottom of CLI
-The repo now includes a compare-files
-subcommand for byte-for-byte validation
-of demo and reference binaries.
+note bottom of ReadSide
+This subsystem view uses ports and delegated internal
+components to match UML component notation more closely.
+The selected input adapter provides ioReadableByteStream.
 end note
 @enduml

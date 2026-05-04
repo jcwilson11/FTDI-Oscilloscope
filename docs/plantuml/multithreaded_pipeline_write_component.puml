@@ -1,64 +1,48 @@
 @startuml
 title Multithreaded Data Acquisition Pipeline - Write Side Component Diagram
 
-skinparam componentStyle rectangle
+left to right direction
 skinparam shadowing false
+skinparam componentStyle uml2
 
-actor "CLI User" as User
-component "Pipeline CLI\n(command-line executable)" as CLI
-component "ioPipelineController" as Controller
-component "ioUsbWriteController\n<<write worker>>" as WriteWorker
-queue "ioDataBuffer\n<<circular buffer>>" as CircularBuffer
+component "Pipeline CLI\n<<external driver>>" as CLI
 
-interface "ioWritableByteStream\n<<output sink protocol>>" as OutputSink
-component "ioFileByteStream\n<<file sink>>" as FileSink
-component "ioFtdiOutputByteStream\n<<FTDI sink>>" as FtdiSink
+component "Write Side Subsystem" as WriteSide {
+  portin commandPort
+  portin bufferPort
+  portout sinkPort
 
-component "OutputSession : ioFtdiSession\n<<existing>>" as OutputSession
-node "FTDI Output Device" as OutputDevice
-file "Output File" as OutputFile
-file "Reference File" as ReferenceFile
+  component "ioPipelineController" as Controller
+  component "ioUsbWriteController\n<<consumer>>" as WriteWorker
+  queue "ioDataBuffer\n<<shared buffer>>" as Buffer
+  component "ioFileByteStream" as FileSink
+  component "ioFtdiOutputByteStream" as FtdiSink
 
-User --> CLI : run pipeline or compare-files
-CLI --> Controller : configure / create / start / stop
-CLI --> OutputFile : compare-files left input
-CLI --> ReferenceFile : compare-files right input
+  () "pipelineLifecycle" as PipelineLifecycle
+  () "writerControl" as WriterControl
+  () "bufferReader" as BufferReader
+  () "ioWritableByteStream" as WritableContract
+}
 
-Controller --> WriteWorker : manage thread lifecycle
-Controller --> CircularBuffer : create / close
-Controller --> OutputSink : select implementation
+PipelineLifecycle - Controller
+WriterControl - WriteWorker
+BufferReader - Buffer
+WritableContract - FileSink
+WritableContract - FtdiSink
 
-WriteWorker --> CircularBuffer : pop byte chunks
-WriteWorker --> OutputSink : write bytes
+CLI ..> commandPort : pipeline command
+commandPort --> Controller : delegation
+bufferPort --> WriteWorker : buffered bytes
+WriteWorker --> sinkPort : delegated output
 
-OutputSink --> FileSink : file mode
-OutputSink --> FtdiSink : FTDI mode
-FileSink --> OutputFile : append or overwrite bytes
-FtdiSink --> OutputSession : FTDI session calls
-OutputSession --> OutputDevice : FT_Write operations
+Controller ..> WriterControl : configure + start
+Controller ..> WritableContract : select output mode
+WriteWorker ..> BufferReader : pop()
+WriteWorker ..> WritableContract : write_bytes()
 
-note bottom of CircularBuffer
-Primary producer-consumer handoff.
-Implemented as ioDataBuffer with
-bounded ring storage and blocking
-push and pop synchronization.
-end note
-
-note right of WriteWorker
-WriteWorker.
-The writer keeps the same drain-and-write
-role regardless of selected destination.
-end note
-
-note bottom of CLI
-The repo now includes a compare-files
-subcommand for byte-for-byte validation
-of demo and reference binaries.
-end note
-
-note bottom of OutputSink
-OutputSink.
-ioFileByteStream supports append and
-overwrite workflows for demos.
+note bottom of WriteSide
+The write side consumes bytes from the shared buffer
+through one contract and forwards them to the selected
+output adapter through ioWritableByteStream.
 end note
 @enduml

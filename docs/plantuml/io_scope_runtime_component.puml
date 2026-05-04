@@ -1,52 +1,61 @@
 @startuml
-title ioScope Runtime Component View
-skinparam componentStyle rectangle
+title ioScope System - Component Diagram
+
+left to right direction
+skinparam componentStyle uml2
 skinparam shadowing false
 
-component "controller.py" as bootstrap
-component "ioQtScopeWindow" as qtWindow
-component "ioScopeShell" as shell
-component "ioOscilloscopeController" as controller
-component "ioOscilloscopeModel" as model
-component "ioCompactOscilloscopeView" as compactView
-component "ioDetailedOscilloscopeView" as detailedView
-component "ioWaveformGenerator" as generator
-component "ioFilterPipeline" as filterPipeline
-component "ioFtdiWaveformSource" as ftdiSource
-component "ioFileWaveformSource" as fileSource
-component "ioGeneratedWaveformSource" as generatedSource
-component "ioDataBuffer" as buffer
-component "ioUsbReadController" as readWorker
-component "ioUsbWriteController" as writeWorker
+component "ioScope Application" as ScopeApp {
+  component "ioQtScopeWindow\n<<UI host>>" as QtWindow
+  component "ioScopeShell\n<<CLI shell>>" as Shell
+  component "ioOscilloscopeController" as Controller
+  component "ioOscilloscopeModel" as Model
+  component "ioCompactOscilloscopeView" as CompactView
+  component "ioDetailedOscilloscopeView" as DetailedView
+  component "ioFilterPipeline" as FilterPipeline
+  component "ioWaveformGenerator" as Generator
+  component "ioGeneratedWaveformSource" as GeneratedSource
+  component "ioFileWaveformSource" as FileSource
+  component "ioFtdiWaveformSource" as FtdiSource
+  component "ioLiveOscilloscopeSession" as LiveSession
+  component "ioPipelineController\n<<live acquisition pipeline>>" as PipelineController
 
-bootstrap --> qtWindow : scope-qt
-bootstrap --> shell : scope-shell
-qtWindow --> controller : UI events
-shell --> controller : CLI commands
-controller --> model
-controller --> compactView : render()
-controller --> detailedView : render()
-model --> generator : acquire raw signal
-model --> filterPipeline : scale + offset
-generator --> ftdiSource
-generator --> fileSource
-generator --> generatedSource
-readWorker --> buffer
-writeWorker --> buffer
+  () "oscilloscopeControl" as OscilloscopeControl
+  () "ioOscilloscopeView" as ViewContract
+  () "signalProcessing" as SignalProcessing
+  () "ioSignalSource" as SignalSource
+  () "liveAcquisitionControl" as LiveAcquisitionControl
+}
 
-note bottom of controller
-The controller fans out one processed
-render state to both concrete views.
+OscilloscopeControl - Controller
+ViewContract - CompactView
+ViewContract - DetailedView
+SignalProcessing - FilterPipeline
+SignalSource - GeneratedSource
+SignalSource - FileSource
+SignalSource - FtdiSource
+LiveAcquisitionControl - LiveSession
+
+QtWindow ..> OscilloscopeControl : UI events
+Shell ..> OscilloscopeControl : shell commands
+QtWindow ..> ViewContract : host active view
+Controller ..> ViewContract : render(state)
+Controller --> Model : update + query state
+Controller ..> LiveAcquisitionControl : start() / stop() / refresh()
+Model ..> SignalProcessing : apply scale + offset
+Model --> Generator : refreshSamples()
+Generator ..> SignalSource : select source
+LiveSession --> PipelineController : configure / start / stop
+
+note bottom of ScopeApp
+This is the whole-system component view for ioScope.
+The UI, controller, model, filter pipeline, source adapters,
+and live acquisition session are shown together as one application.
 end note
 
-note bottom of qtWindow
-The Qt window is a host component.
-It chooses which concrete view is visible
-without replacing the single View abstraction.
-end note
-
-note bottom of buffer
-The implemented transport path uses one shared
-bounded circular buffer between the two workers.
+note bottom of PipelineController
+The detailed producer-consumer internals of the live
+pipeline are documented separately in the dedicated
+multithreaded pipeline component diagrams.
 end note
 @enduml
