@@ -1,0 +1,31 @@
+@startuml
+title ioScope Security Tactics - Structural View
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+hide empty members
+
+legend right
+<<implemented>> Present in the current codebase
+<<proposed>> Recommended extension for rubric coverage
+endlegend
+
+package "Implemented Core" {
+  class ioOscilloscopeController <<implemented>>
+}
+
+package "Security Extensions" {
+  class ioRemoteAccessGateway <<proposed>>
+  class ioAuthenticator <<proposed>>
+  class ioAuthorizationPolicy <<proposed>>
+  class ioAuditLog <<proposed>>
+
+  ioAuthenticator --> ioRemoteAccessGateway : verify identity
+  ioAuthorizationPolicy --> ioRemoteAccessGateway : allow / deny actions
+  ioRemoteAccessGateway --> ioOscilloscopeController : forward allowed commands
+  ioRemoteAccessGateway --> ioAuditLog : record access and changes
+}
+
+@enduml

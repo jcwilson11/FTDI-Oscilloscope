@@ -29,3 +29,14 @@ This index maps the checklist-style deliverables to a single clearly named Plant
 7. Package diagram
    File: `docs/plantuml/io_scope_requirement_package.puml`
    Source copied from: `docs/plantuml/io_scope_package.puml`
+
+8. Quality attribute structural diagram set
+   Overview file: `docs/plantuml/io_scope_quality_attribute_tactics.puml`
+   Companion files:
+   - `docs/plantuml/io_scope_quality_attribute_availability.puml`
+   - `docs/plantuml/io_scope_quality_attribute_performance.puml`
+   - `docs/plantuml/io_scope_quality_attribute_usability.puml`
+   - `docs/plantuml/io_scope_quality_attribute_security.puml`
+   - `docs/plantuml/io_scope_quality_attribute_safety.puml`
+   - `docs/plantuml/io_scope_quality_attribute_energy_efficiency.puml`
+   Purpose: Splits the rubric coverage into one focused structural diagram per quality attribute with brief rationale.

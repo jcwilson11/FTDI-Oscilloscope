@@ -100,7 +100,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     scope_parser = subparsers.add_parser(
         "scope-shell",
-        help="Run the professor-facing oscilloscope shell",
+        help="Run scilloscope shell",
     )
     scope_parser.add_argument(
         "--headless",

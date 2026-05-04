@@ -5,8 +5,8 @@
     "input_source": "ftdi:0",
     "generated_waveform": "sine",
     "live_file_path": "demo_input.bin",
-    "scale": 1.0,
-    "offset": 0.0,
+    "scale": 2.0,
+    "offset": 0.5,
     "active_theme": "portrait",
     "active_view": "detailed",
     "ftdi_input_device_index": 0,
@@ -16,72 +16,170 @@
     "ftdi_dll_path": "",
     "write_to_ftdi_enabled": false,
     "tee_output_enabled": false,
-    "tee_output_mode": "none",
+    "tee_output_mode": "ftdi",
     "tee_output_path": "demo_output.bin",
     "render_interval_ms": 50
   },
   "viewport_state": {
-    "start_index": 1848,
+    "start_index": 1763,
     "window_size": 200
   },
   "event_log": [
     {
-      "timestamp": "2026-05-03T23:28:19-04:00",
-      "event_type": "source_change",
+      "timestamp": "2026-05-04T16:36:31-04:00",
+      "event_type": "tee_output_mode_change",
       "payload": {
-        "input_source": "ftdi:0"
+        "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-05-03T23:28:23-04:00",
+      "timestamp": "2026-05-04T16:36:31-04:00",
+      "event_type": "tee_output_enabled_change",
+      "payload": {
+        "tee_output_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:36:46-04:00",
       "event_type": "session_start",
       "payload": {
-        "input_source": "ftdi:0",
-        "tee_output_mode": "none"
+        "input_source": "sine",
+        "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-05-03T23:28:38-04:00",
+      "timestamp": "2026-05-04T16:36:50-04:00",
       "event_type": "session_stop",
       "payload": {
-        "input_source": "ftdi:0"
+        "input_source": "sine"
       }
     },
     {
-      "timestamp": "2026-05-03T23:29:31-04:00",
+      "timestamp": "2026-05-04T16:54:09-04:00",
+      "event_type": "tee_output_mode_change",
+      "payload": {
+        "tee_output_mode": "ftdi"
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:54:09-04:00",
+      "event_type": "tee_output_enabled_change",
+      "payload": {
+        "tee_output_enabled": true
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:54:15-04:00",
       "event_type": "session_start",
       "payload": {
-        "input_source": "ftdi:0",
-        "tee_output_mode": "none"
+        "input_source": "sine",
+        "tee_output_mode": "ftdi"
       }
     },
     {
-      "timestamp": "2026-05-03T23:29:59-04:00",
+      "timestamp": "2026-05-04T16:54:21-04:00",
       "event_type": "session_stop",
       "payload": {
-        "input_source": "ftdi:0"
+        "input_source": "sine"
       }
     },
     {
-      "timestamp": "2026-05-03T23:30:23-04:00",
-      "event_type": "session_start",
-      "payload": {
-        "input_source": "ftdi:0",
-        "tee_output_mode": "none"
-      }
-    },
-    {
-      "timestamp": "2026-05-03T23:30:31-04:00",
+      "timestamp": "2026-05-04T16:54:41-04:00",
       "event_type": "active_view_change",
       "payload": {
         "active_view": "detailed"
       }
     },
     {
-      "timestamp": "2026-05-03T23:30:46-04:00",
+      "timestamp": "2026-05-04T16:54:54-04:00",
+      "event_type": "session_start",
+      "payload": {
+        "input_source": "sine",
+        "tee_output_mode": "ftdi"
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:02-04:00",
       "event_type": "session_stop",
       "payload": {
+        "input_source": "sine"
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:10-04:00",
+      "event_type": "source_change",
+      "payload": {
         "input_source": "ftdi:0"
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:23-04:00",
+      "event_type": "recovery_message",
+      "payload": {
+        "message": "FT_Open failed with FT_DEVICE_NOT_OPENED (3)"
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:28-04:00",
+      "event_type": "tee_output_enabled_change",
+      "payload": {
+        "tee_output_enabled": false
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:43-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 1.25
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:43-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 1.5
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:44-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 1.75
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:44-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 2.0
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:44-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 2.25
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:45-04:00",
+      "event_type": "scale_change",
+      "payload": {
+        "scale": 2.0
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:48-04:00",
+      "event_type": "offset_change",
+      "payload": {
+        "offset": 0.25
+      }
+    },
+    {
+      "timestamp": "2026-05-04T16:55:48-04:00",
+      "event_type": "offset_change",
+      "payload": {
+        "offset": 0.5
       }
     }
   ]

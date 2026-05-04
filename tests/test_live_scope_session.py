@@ -60,3 +60,25 @@ class LiveScopeSessionTests(unittest.TestCase):
         latest = session.latest_samples(8)
         self.assertTrue(latest)
         self.assertEqual(self.output_file.read_bytes(), b"\x00\x40\x80\xC0\xFF")
+
+    def test_live_session_uses_file_input_source_path_without_duplicate_live_file_path(self):
+        self.input_file.write_bytes(b"\x00\x80\xFF")
+        control = ioControlState(
+            input_source=f"file:{self.input_file}",
+            sample_time_seconds=0.01,
+            ftdi_bytes_per_read=8,
+        )
+        session = ioLiveOscilloscopeSession()
+
+        session.start(control, history_size=64)
+        try:
+            deadline = time.perf_counter() + 1.0
+            while session.status_snapshot()["bytes_read"] < 3 and time.perf_counter() < deadline:
+                time.sleep(0.05)
+        finally:
+            session.stop()
+
+        latest = session.latest_samples(8)
+        self.assertEqual(len(latest), 3)
+        self.assertAlmostEqual(latest[0], -1.0)
+        self.assertAlmostEqual(latest[-1], 1.0)

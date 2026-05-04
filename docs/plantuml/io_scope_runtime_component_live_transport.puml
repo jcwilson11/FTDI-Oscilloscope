@@ -1,0 +1,63 @@
+@startuml
+title ioScope Runtime Component View - Live Session and Transport
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+component "ioOscilloscopeController" as controller
+component "ioLiveOscilloscopeSession\n<<live acquisition facade>>" as liveSession
+component "ioLiveSampleHistory" as history
+
+component "ioPipelineController" as pipeline
+component "ioTappedReadableByteStream" as tappedStream
+interface "ioReadableByteStream" as readStream
+component "ioGeneratedWaveformByteStream" as generatedStream
+component "ioLiveFileTailByteStream" as fileTailStream
+component "ioFtdiByteStream" as ftdiInputStream
+
+interface "ioWritableByteStream" as writeStream
+component "ioNullWritableByteStream" as nullSink
+component "ioFileByteStream" as fileSink
+component "ioFtdiOutputByteStream" as ftdiSink
+
+component "ioUsbReadController\n<<read worker>>" as readWorker
+queue "ioDataBuffer\n<<bounded circular buffer>>" as buffer
+component "ioUsbWriteController\n<<write worker>>" as writeWorker
+
+controller --> liveSession : start() / stop() / latest_samples()
+
+liveSession --> history : own rolling samples
+liveSession --> readStream : choose live source
+liveSession --> tappedStream : wrap selected input stream
+liveSession --> pipeline : build + start + stop
+liveSession --> writeStream : choose tee sink
+
+tappedStream --> history : mirror payload to samples
+tappedStream --> readStream : delegate stream calls
+readStream --> generatedStream : generated live mode
+readStream --> fileTailStream : live file mode
+readStream --> ftdiInputStream : live FTDI mode
+
+pipeline --> readWorker : manage lifecycle
+pipeline --> writeWorker : manage lifecycle
+pipeline --> buffer : create + close
+pipeline --> tappedStream : inject as input_stream
+pipeline --> writeStream : inject as output_stream
+
+readWorker --> tappedStream : read_bytes()
+readWorker --> buffer : push byte chunks
+writeWorker --> buffer : pop byte chunks
+writeWorker --> writeStream : write bytes
+
+writeStream --> nullSink : tee disabled
+writeStream --> fileSink : file tee mode
+writeStream --> ftdiSink : FTDI tee mode
+
+note bottom of buffer
+ioDataBuffer is only the worker handoff inside
+ioPipelineController. Rendered live samples are
+read back from ioLiveSampleHistory, not from
+the buffer directly.
+end note
+@enduml

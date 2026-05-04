@@ -1,0 +1,33 @@
+@startuml
+title ioScope Safety Tactics - Structural View
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+hide empty members
+
+legend right
+<<implemented>> Present in the current codebase
+<<proposed>> Recommended extension for rubric coverage
+endlegend
+
+package "Implemented Core" {
+  class ioOscilloscopeController <<implemented>>
+  class ioLiveOscilloscopeSession <<implemented>>
+}
+
+package "Safety Extensions" {
+  class ioRemoteAccessGateway <<proposed>>
+  class ioSafetyGuard <<proposed>>
+  class ioSafeRangeProfile <<proposed>>
+  class ioRemoteInterlock <<proposed>>
+
+  ioSafeRangeProfile --> ioSafetyGuard : safe defaults and limits
+  ioSafetyGuard --> ioOscilloscopeController : validate setpoints
+  ioSafetyGuard --> ioLiveOscilloscopeSession : clamp or stop unsafe runs
+  ioRemoteInterlock --> ioRemoteAccessGateway : read-only by default
+  ioRemoteInterlock --> ioSafetyGuard : require elevated control
+}
+
+@enduml

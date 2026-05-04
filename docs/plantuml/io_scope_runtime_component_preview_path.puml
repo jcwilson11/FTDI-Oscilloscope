@@ -1,0 +1,32 @@
+@startuml
+title ioScope Runtime Component View - Preview Signal Path
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+component "ioOscilloscopeController" as controller
+component "ioOscilloscopeModel\n<<state + viewport>>" as model
+component "ioFilterPipeline\n<<scale + offset>>" as filterPipeline
+component "ioWaveformGenerator\n<<preview source selector>>" as generator
+component "ioGeneratedWaveformSource" as generatedSource
+component "ioFileWaveformSource" as fileSource
+component "ioFtdiWaveformSource" as ftdiSource
+component "ioFtdiByteStream" as ftdiInputStream
+
+controller --> model : update/query state
+model --> filterPipeline : process(rawSignal)
+model --> generator : refreshSamples()
+
+generator --> generatedSource : generated preview mode
+generator --> fileSource : file:path preview mode
+generator --> ftdiSource : ftdi:index preview mode
+ftdiSource --> ftdiInputStream : one-shot read_bytes()
+
+note bottom of model
+The preview path stays inside the oscilloscope
+package. The model asks ioWaveformGenerator
+for samples, then applies ioFilterPipeline
+before the controller renders views.
+end note
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+title ioScope Energy Efficiency Tactics - Structural View
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+hide empty members
+
+legend right
+<<implemented>> Present in the current codebase
+<<proposed>> Recommended extension for rubric coverage
+endlegend
+
+package "Implemented Core" {
+  class ioQtScopeWindow <<implemented>>
+  class ioLiveOscilloscopeSession <<implemented>>
+}
+
+package "Energy Efficiency Extensions" {
+  class ioEnergyManager <<proposed>>
+  class ioIdleMonitor <<proposed>>
+  class ioSleepController <<proposed>>
+  class ioWakeController <<proposed>>
+  class ioDisplayController <<proposed>>
+  class ioAcquisitionPowerController <<proposed>>
+
+  ioIdleMonitor --> ioEnergyManager : idle notifications
+  ioEnergyManager --> ioSleepController : enter low-power mode
+  ioWakeController --> ioEnergyManager : activity detected
+  ioSleepController --> ioDisplayController : dim or turn off display
+  ioSleepController --> ioAcquisitionPowerController : pause background work
+  ioWakeController --> ioDisplayController : restore display
+  ioWakeController --> ioAcquisitionPowerController : resume capture
+  ioDisplayController --> ioQtScopeWindow : apply brightness state
+  ioAcquisitionPowerController --> ioLiveOscilloscopeSession : throttle or resume
+}
+
+@enduml

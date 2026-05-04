@@ -1,0 +1,42 @@
+@startuml
+title ioScope Usability Tactics - Structural View
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+hide empty members
+
+legend right
+<<implemented>> Present in the current codebase
+<<proposed>> Recommended extension for rubric coverage
+endlegend
+
+package "Implemented Core" {
+  class ioQtScopeWindow <<implemented>>
+  class ioOscilloscopeController <<implemented>>
+  class ioScopeSettingsStore <<implemented>>
+
+  ioQtScopeWindow --> ioOscilloscopeController : UI events
+  ioOscilloscopeController --> ioScopeSettingsStore : persist state
+}
+
+package "Usability Extensions" {
+  class ioCapturePresetCatalog <<proposed>>
+  class ioValidationFeedbackService <<proposed>>
+
+  ioCapturePresetCatalog --> ioOscilloscopeController : apply common lab presets
+  ioValidationFeedbackService --> ioQtScopeWindow : inline hints and warnings
+  ioValidationFeedbackService --> ioOscilloscopeController : explain rejected input
+}
+
+note bottom of ioQtScopeWindow
+Usability tactic:
+task-oriented presets, saved settings,
+and inline feedback reduce operator steps.
+Rationale: common capture tasks should stay
+within about five actions and begin streaming
+within the response targets from the write-up.
+end note
+
+@enduml

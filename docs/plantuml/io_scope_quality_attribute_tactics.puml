@@ -1,0 +1,30 @@
+@startuml
+title ioScope Quality Attribute Tactics - Overview
+
+skinparam rectangle {
+  RoundCorner 10
+}
+skinparam shadowing false
+top to bottom direction
+
+rectangle "Availability\nio_scope_quality_attribute_availability.puml\n--\nhealth monitoring and supervised recovery" as availability
+rectangle "Performance\nio_scope_quality_attribute_performance.puml\n--\nthreaded pipeline and bounded buffering" as performance
+rectangle "Usability\nio_scope_quality_attribute_usability.puml\n--\npresets, saved settings, inline feedback" as usability
+rectangle "Security\nio_scope_quality_attribute_security.puml\n--\nauthentication, authorization, auditing" as security
+rectangle "Safety\nio_scope_quality_attribute_safety.puml\n--\nsafe limits, validation, remote interlock" as safety
+rectangle "Energy Efficiency\nio_scope_quality_attribute_energy_efficiency.puml\n--\nidle detection, sleep mode, fast wake" as energy
+
+availability -[hidden]-> performance
+performance -[hidden]-> usability
+usability -[hidden]-> security
+security -[hidden]-> safety
+safety -[hidden]-> energy
+
+note bottom
+Each quality attribute now has its own structural diagram.
+This overview exists only as a small index for the split set.
+Implemented and proposed classes are marked inside the
+individual quality-attribute files.
+end note
+
+@enduml

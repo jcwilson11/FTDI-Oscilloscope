@@ -1,0 +1,35 @@
+@startuml
+title ioScope Availability Tactics - Structural View
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+hide empty members
+
+legend right
+<<implemented>> Present in the current codebase
+<<proposed>> Recommended extension for rubric coverage
+endlegend
+
+package "Implemented Core" {
+  class ioLiveOscilloscopeSession <<implemented>>
+  class ioPipelineController <<implemented>>
+  class ioRecoveryManager <<implemented>>
+  class ioScopeSettingsStore <<implemented>>
+
+  ioLiveOscilloscopeSession --> ioPipelineController : start / stop pipeline
+  ioPipelineController --> ioRecoveryManager : report worker faults
+}
+
+package "Availability Extensions" {
+  class ioHealthMonitor <<proposed>>
+  class ioSessionSupervisor <<proposed>>
+
+  ioHealthMonitor --> ioLiveOscilloscopeSession : heartbeat / timeout probe
+  ioSessionSupervisor --> ioHealthMonitor : consume health data
+  ioSessionSupervisor --> ioRecoveryManager : restart policy
+  ioSessionSupervisor --> ioScopeSettingsStore : restore last safe state
+}
+
+@enduml

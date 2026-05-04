@@ -25,6 +25,9 @@ class ioControlState:
     tee_output_path: str = "demo_output.bin"
     render_interval_ms: int = 50
 
+    def __post_init__(self) -> None:
+        self._sync_derived_fields()
+
     def to_dict(self) -> dict[str, float | str]:
         return asdict(self)
 
@@ -44,12 +47,15 @@ class ioControlState:
             state.tee_output_mode = "ftdi"
             state.write_to_ftdi_enabled = True
 
-        if state.input_source.startswith("file:"):
-            state.live_file_path = state.input_source[5:] or state.live_file_path
-        elif state.input_source.startswith("ftdi:"):
-            raw_index = state.input_source.split(":", 1)[1].strip()
-            if raw_index:
-                state.ftdi_input_device_index = int(raw_index)
-        elif state.input_source in {"sine", "square", "triangle", "sawtooth"}:
-            state.generated_waveform = state.input_source
+        state._sync_derived_fields()
         return state
+
+    def _sync_derived_fields(self) -> None:
+        if self.input_source.startswith("file:"):
+            self.live_file_path = self.input_source[5:] or self.live_file_path
+        elif self.input_source.startswith("ftdi:"):
+            raw_index = self.input_source.split(":", 1)[1].strip()
+            if raw_index:
+                self.ftdi_input_device_index = int(raw_index)
+        elif self.input_source in {"sine", "square", "triangle", "sawtooth"}:
+            self.generated_waveform = self.input_source

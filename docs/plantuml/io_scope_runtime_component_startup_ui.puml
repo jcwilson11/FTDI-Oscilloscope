@@ -1,0 +1,48 @@
+@startuml
+title ioScope Runtime Component View - Startup, Settings, and UI Host
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+actor "User" as user
+
+component "controller.py\n<<entry point>>" as bootstrap
+component "run_scope_qt\n(io_scope_qt.py)" as qtLauncher
+component "ioScopeShell\n(io_scope_shell.py)" as shell
+
+component "ioScopeSettingsStore\n<<JSON persistence>>" as settings
+
+component "ioQtScopeWindow\n<<Qt host>>" as qtWindow
+component "ioOscilloscopeView\n<<view contract>>" as viewContract
+component "ioCompactOscilloscopeView" as compactView
+component "ioDetailedOscilloscopeView" as detailedView
+component "ioOscilloscopeController" as controller
+
+user --> bootstrap : run scope command
+bootstrap --> qtLauncher : scope-qt
+bootstrap --> shell : scope-shell
+
+qtLauncher --> settings : load() / save()
+qtLauncher --> controller : construct + restore state
+qtLauncher --> qtWindow : construct + connectController()
+shell --> settings : load() / save()
+shell --> controller : construct + execute commands
+
+qtWindow --> controller : UI events + timer refresh
+qtWindow --> compactView : host in stacked window
+qtWindow --> detailedView : host in stacked window
+
+compactView ..> viewContract : implements
+detailedView ..> viewContract : implements
+controller --> compactView : connectController() + render()
+controller --> detailedView : connectController() + render()
+controller --> settings : state-change listener callback
+
+note bottom of qtWindow
+run_scope_qt creates one shared list of the
+compact and detailed view objects, then passes
+those same instances into both the Qt window
+and the oscilloscope controller.
+end note
+@enduml

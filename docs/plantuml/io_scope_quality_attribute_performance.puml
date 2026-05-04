@@ -1,0 +1,54 @@
+@startuml
+title ioScope Performance Tactics - Structural View
+
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+left to right direction
+hide empty members
+
+legend right
+<<implemented>> Present in the current codebase
+<<proposed>> Recommended extension for rubric coverage
+endlegend
+
+package "Implemented Core" {
+  class ioLiveOscilloscopeSession <<implemented>>
+  class ioPipelineController <<implemented>>
+  class ioDataBuffer <<implemented>>
+  class ioUsbReadController <<implemented>>
+  class ioUsbWriteController <<implemented>>
+  class ioAcquisitionMonitor <<implemented>>
+  class ioThroughputMonitor <<implemented>>
+  class ioInputScheduler <<implemented>>
+  class ioOutputScheduler <<implemented>>
+
+  ioLiveOscilloscopeSession --> ioPipelineController : own live transfer path
+  ioPipelineController --> ioDataBuffer : bounded handoff
+  ioPipelineController --> ioUsbReadController : manage reader
+  ioPipelineController --> ioUsbWriteController : manage writer
+  ioUsbReadController --> ioAcquisitionMonitor : measure bytes read
+  ioUsbWriteController --> ioThroughputMonitor : measure bytes written
+  ioUsbReadController --> ioInputScheduler : pacing policy
+  ioUsbWriteController --> ioOutputScheduler : pacing policy
+}
+
+package "Performance Extensions" {
+  class ioRenderRefreshPolicy <<proposed>>
+  class ioRemoteUpdateRateLimiter <<proposed>>
+
+  ioRenderRefreshPolicy --> ioLiveOscilloscopeSession : sample UI at safe rate
+  ioRemoteUpdateRateLimiter --> ioLiveOscilloscopeSession : throttle remote sharing
+}
+
+note bottom of ioPipelineController
+Performance tactic:
+separate read and write workers from the UI,
+use one bounded circular buffer, and schedule
+transfer loops explicitly.
+Rationale: acquisition stays responsive while
+rendering, logging, or remote updates are
+buffered or rate-limited.
+end note
+
+@enduml
